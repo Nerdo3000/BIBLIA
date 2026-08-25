@@ -1,0 +1,14 @@
+Die Suchfunktion dieses Programmes ist kompatibel mit regulären Ausdrücken. Diese können für bestimmte Suchmuster verwendet werden; eine gute Übersicht lässt sich auf https://regexe.de/hilfe.jsp finden (es wird keine Haftung für jegliche Links übernommen).
+
+Die wichtigsten Hinweise:
+"." heißt jegliche Zeichen, wenn nach einem echten "." gesucht wird benutze man "\."
+
+"^$" steht für eine Leere Eingabe
+
+"+" ist ein Quantifikator, für eine echtes "+" bitte "\+" verwenden
+
+"*" ist ein Quantifikator, für eine echtes "*" bitte "\*" verwenden
+
+"?" ist ein Quantifikator, für eine echtes "?" bitte "\?" verwenden
+
+"\d" steht für eine beliebige Ziffer (0-9)

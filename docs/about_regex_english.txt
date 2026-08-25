@@ -1,0 +1,14 @@
+This programme’s search function is compatible with regular expressions. These can be used for specific search patterns; a good overview can be found at https://www.rexegg.com/regex-quickstart.php (no liability is accepted for any links).
+
+Key points:
+‘.’ stands for any character; to search for a literal ‘.’, use ‘\.’
+
+‘^$’ stands for an empty input
+
+‘+’ is a quantifier; to search for a literal ‘+’, please use ‘\+’
+
+‘*’ is a quantifier; to use a literal ‘*’, please use ‘\*’
+
+‘?’ is a quantifier; to use a literal ‘?’, please use ‘\?’
+
+‘\d’ stands for any digit (0–9)
