@@ -80,7 +80,7 @@ if "de_" == locale.getlocale()[0][:3]:
     TAB_LOCATION = "Standorte"
     #################################
     LAYOUTER_ADD_ENTRY = "Hinzufügen"
-    AYOUTER_TOOLTIP_SEARCH_SUBSTRING0 = "Nach "
+    LAYOUTER_TOOLTIP_SEARCH_SUBSTRING0 = "Nach "
     LAYOUTER_TOOLTIP_SEARCH_SUBSTRING2 = " suchen"
     LAYOUTER_CLEAR = "Löschen"
     LAYOUTER_TOOLTIP_POS_SUBSTRING0 = "Einträge in \""
