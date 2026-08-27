@@ -33,7 +33,7 @@ class Layout:
     def __init__(self, table_header, GLOBAL_SAVE_FILE):
         table_header = table_header[0].tolist()
 
-        self.meta_data_raw = files.from_csv(GLOBAL_SAVE_FILE.removesuffix(".csv")+".meta")
+        self.meta_data_raw = files.import_csv(GLOBAL_SAVE_FILE.removesuffix(".csv")+".meta.csv",failsafe=[])
         if DEBUG: print(self.meta_data_raw.shape)
         if self.meta_data_raw.shape != (8, len(table_header)):
             if self.meta_data_raw.shape[0]==8:
@@ -58,7 +58,7 @@ class Layout:
                 self.meta_data_raw[2].fill("true")
                 self.meta_data_raw[3,:] = table_header
                 self.meta_data_raw[4,:] = table_header
-                self.meta_data_raw[4,0] = "Auswertung"
+                self.meta_data_raw[4,0] = "Analysis"
                 self.meta_data_raw[5].fill(10)
                 self.meta_data_raw[5,0] = 0
                 self.meta_data_raw[6].fill(10)

@@ -42,30 +42,19 @@ def re_index(my_data):
         #my_data[i,5] = str(my_data[i,5]).replace(",",".")
     return my_data
 
-def save_from_csv(path,encoding="utf-8",dialect="unix"):
+def import_csv(path,encoding="utf-8",dialect="unix",failsafe=[["Nr","Titel"],[1,"KEINE DATEN GELADEN"]]):
     if DEBUG: print(path)
     try:
         with open(path,"r",encoding=encoding,newline='') as file:
             reader = csv.reader(file, dialect=dialect)
             n = numpy.array(list(reader),dtype="str")
-        if n.shape[0]<2 or n.shape[1]<2: return numpy.array([["Nr","Titel"],[1,"KEINE DATEN GELADEN"]])
+        if n.shape[0]<2 or n.shape[1]<2: return numpy.array(failsafe)
         return n
     except FileNotFoundError:
-        return numpy.array([["Nr","Titel"],[1,"KEINE DATEN GELADEN"]])
+        return numpy.array(failsafe)
     except ValueError as e:
         if DEBUG: print(e)
-        return numpy.array([["Nr","Titel"],[1,e]])
-
-def from_csv(path):
-    if DEBUG: print(path)
-    try:
-        return numpy.genfromtxt(path, delimiter='‖',dtype="str",encoding="utf-8")
-    except FileNotFoundError:
-        return numpy.array([])
-    except ValueError as e:
-        if DEBUG: print(e)
-        return numpy.array([])
-
+        return numpy.array(failsafe)
 
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """

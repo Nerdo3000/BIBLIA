@@ -276,7 +276,7 @@ try:
 
     def write_book_key(idx, key):
         global my_data
-        my_data[idx, Layouter.key_list.index(key)] = str(window[key].get()).replace("\n", "|")#.replace("‖", "")
+        my_data[idx, Layouter.key_list.index(key)] = str(window[key].get()).replace("\n", "|")
 
     def get_key(string):
         return string + str(layouter.key_counter)
@@ -565,7 +565,7 @@ try:
 
     if file_name:
         GLOBAL_SAVE_FILE = file_name
-        my_data = files.save_from_csv(GLOBAL_SAVE_FILE)
+        my_data = files.import_csv(GLOBAL_SAVE_FILE)
         new_main_window()
         loop_con = True
 
@@ -624,7 +624,7 @@ try:
             if file_name:
                 GLOBAL_SAVE_FILE = file_name
                 window.close()
-                my_data = files.save_from_csv(GLOBAL_SAVE_FILE)
+                my_data = files.import_csv(GLOBAL_SAVE_FILE)
                 new_main_window()
 
         elif event == lang.MENU_SAVE_MAIN:
@@ -648,7 +648,7 @@ try:
             if file_name:
                 GLOBAL_SAVE_FILE = file_name
                 window.close()
-                my_data = files.save_from_csv(GLOBAL_SAVE_FILE,"utf-8-sig","excel")
+                my_data = files.import_csv(GLOBAL_SAVE_FILE,"utf-8-sig","excel")
                 new_main_window()
         elif event==lang.MENU_IMPORT_EXCEL_GERMAN:
             filetypes = [("Comma-separated values", ".csv")]
@@ -658,7 +658,7 @@ try:
             if file_name:
                 GLOBAL_SAVE_FILE = file_name
                 window.close()
-                my_data = files.save_from_csv(GLOBAL_SAVE_FILE,"utf-8-sig","excel-german")
+                my_data = files.import_csv(GLOBAL_SAVE_FILE,"utf-8-sig","excel-german")
                 for row_idx in range(my_data.shape[0]):
                     for col_idx in range(my_data.shape[1]):
                         if re.search(r"^\d+,\d+$",str(my_data[row_idx,col_idx])):
