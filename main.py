@@ -696,7 +696,7 @@ try:
                 default_extension = ".txt"
 
                 temp = []
-                print(new_data)
+                if DEBUG: print(new_data)
                 for row in new_data[1:]:
                     for i in range(len(row)):
                         temp.append(str(new_data[0][i])+": "+str(row[i])+"\n")
