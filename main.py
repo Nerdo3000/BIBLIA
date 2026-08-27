@@ -88,17 +88,10 @@ try:
         return table_data.shape[0] - 1
 
     def lock_search(state):
-        for key_name in Layouter.search_normal:
+        for key_name in Layouter.combo_elements_search:
             window[key_name].update(readonly=state)
 
         for key_name in Layouter.search_buttons[1:]:
-            window[key_name].update(disabled=state)
-
-        for key_name in Layouter.lock_complex_search:
-            if state:
-                window[key_name].Widget.config(bg=THIRD_COLOR(sg.theme()))
-            else:
-                window[key_name].Widget.config(bg=sg.theme_input_background_color())
             window[key_name].update(disabled=state)
 
     def lock_input(state):
@@ -213,7 +206,7 @@ try:
         list_art = []
         list_min = []
         list_max = []
-        for i in range(table_data.shape[1] - 1):
+        for i in range(0,table_data.shape[1]):
             table_data_column = table_data[1:, i].tolist()
             if i in Layouter.treat_as_date:
                 sorted_list = [convert_date_front(x) for x in (table_data_column)]
@@ -225,9 +218,9 @@ try:
                 table_data_column.sort()
                 sorted_list = table_data_column
                 if i in Layouter.skip_math:
-                    list_min.append(sorted_list[0])
-                    list_max.append(sorted_list[-1])
-                    list_mid.append(sorted_list[data_len() // 2])
+                    list_min.append("")
+                    list_max.append("")
+                    list_mid.append("")
                 else:
                     list_min.append(min(sorted_list))
                     list_max.append(max(sorted_list))
@@ -367,7 +360,7 @@ try:
         global window, table_data, my_data, hash_val_ANALYSE, hash_val_STANDORT, Layouter, GLOBAL_EMPTY_OVERRIDE, GLOBAL_SEARCH, prev_selected_auto, prev_button 
         GLOBAL_EMPTY_OVERRIDE = False
         GLOBAL_SEARCH = False
-        my_data = files.re_index(my_data)
+        my_data = files.index(my_data)
         table_data = my_data
         prev_selected_auto = prev_button = None
 
@@ -417,7 +410,7 @@ try:
                                 expand_y=True,
                                 enable_events=True,
                                 select_mode=sg.TABLE_SELECT_MODE_BROWSE,
-                                justification="left",
+                                cols_justification = Layouter.col_just,
                                 tooltip=lang.TOOLTIP_TABLE
                             )
                         ],
@@ -435,7 +428,7 @@ try:
                                 select_mode=sg.TABLE_SELECT_MODE_NONE,
                                 expand_x=True,
                                 expand_y=False,
-                                justification="left",
+                                cols_justification = Layouter.col_just,
                                 tooltip=lang.TOOLTIP_ANALYSIS_HEAD
                             )
                         ],
@@ -739,12 +732,12 @@ try:
             write_book_key(get_IDX(), event)
             update_hashes()
 
-        elif event in Layouter.search_key_list:
-            search()
+        #elif event in Layouter.search_key_list:
+        #    search()
 
 
         elif re.search(" AUTO_COMBO ", event):
-            if window["-EDITABLE?-"].get(): close_auto_box(); continue
+            if not re.search("SEARCH",event) and window["-EDITABLE?-"].get(): close_auto_box(); continue
             key = event.replace(" AUTO_COMBO ", "")
             if re.search("KEY_PRESS",key):
                 key_name = key.removesuffix("KEY_PRESS")
@@ -753,8 +746,12 @@ try:
                 prev_selected_auto = key_name
                 
                 if key_name in Layouter.combo_elements:
-                    current = str(window[key_name].get()).lower().replace("?", "\\?").replace(".", "\\.")
                     i = Layouter.key_list.index(key_name.removesuffix("ADD_ENTRY"))
+                elif key_name in Layouter.combo_elements_search:
+                    i = Layouter.search_key_list.index(key_name.removesuffix("ADD_ENTRY"))
+
+                if key_name in Layouter.combo_elements_search or key_name in Layouter.combo_elements:
+                    current = str(window[key_name].get()).lower()
                     new_list = my_data[1:, i].tolist()
                     set_list = []
                     new_list.pop(get_IDX() - 1)
@@ -773,7 +770,11 @@ try:
                             if DEBUG: print(remove_regex(current))
                     if not str(window[key_name].get()) in new_list:
                         new_list.insert(0, str(window[key_name].get()))
-                if DEBUG: print(new_list)
+
+                if key_name in Layouter.combo_elements:
+                    write_book_key(get_IDX(),key_name.removesuffix("ADD_ENTRY"))
+                elif key_name in Layouter.combo_elements_search:
+                    search()
                 try:
                     if auto_window.is_closed():
                         auto_window_layout = [[sg.Listbox(values=new_list, expand_x=True, expand_y=True, pad=0,key="AUTOBOX")]]
@@ -795,9 +796,8 @@ try:
                     )
                     auto_window.bind("<Button-1>", key_name+" AUTO_COMBO ENTER")
                     auto_window["AUTOBOX"].metadata = -1
-                
                 window[key_name].set_focus()
-                write_book_key(get_IDX(),key_name.removesuffix("ADD_ENTRY"))
+                
             elif re.search("ENTER",key):
                 key_name = key.removesuffix("ENTER")
                 try:
@@ -812,7 +812,10 @@ try:
                         window[key_name.removesuffix("ADD_ENTRY")].update(append=True, value="\n" + str(window[key_name].get()))
                         window[key_name].update(value="")
                         window[key_name.removesuffix("ADD_ENTRY")].update(append=False, value=str(window[key_name.removesuffix("ADD_ENTRY")].get()).removeprefix("\n"))
-                write_book_key(get_IDX(),key_name.removesuffix("ADD_ENTRY"))
+                if key_name in Layouter.combo_elements:
+                    write_book_key(get_IDX(),key_name.removesuffix("ADD_ENTRY"))
+                elif key_name in Layouter.combo_elements_search:
+                    search()
             elif re.search("UNFOCUS",key):
                 key_name = key.removesuffix("UNFOCUS")
                 try:
@@ -824,7 +827,10 @@ try:
                             if str(auto_window["AUTOBOX"].get()) != "":
                                 try: window[key_name].update(str(auto_window["AUTOBOX"].get()[0]))
                                 except IndexError: pass
-                    write_book_key(get_IDX(),key_name.removesuffix("ADD_ENTRY"))
+                    if key_name in Layouter.combo_elements:
+                        write_book_key(get_IDX(),key_name.removesuffix("ADD_ENTRY"))
+                    elif key_name in Layouter.combo_elements_search:
+                        search()
                     close_auto_box()
                 except NameError: pass
             elif re.search(" SELECT_", event):
@@ -847,7 +853,6 @@ try:
                     if DEBUG: print(auto_window["AUTOBOX"].metadata, len(auto_window["AUTOBOX"].Values) - 1)
                 except NameError:
                     pass
-
 
 
         elif event == "-NEW-" and not GLOBAL_SEARCH:

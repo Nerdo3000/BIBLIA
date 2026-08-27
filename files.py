@@ -26,21 +26,28 @@ csv.register_dialect("excel-german",csv.excel,delimiter=";")
 def export(array,name="",dialect="unix",encoding="utf-8"):
     try:os.remove(name)
     except FileNotFoundError:pass
-
+    
     if dialect=="txt":
         with open(name,"x",encoding=encoding,newline='') as file:
             file.writelines(array)
             return
 
     with open(name,"x",encoding=encoding,newline='') as file:
+        array = [x[1:] for x in array]
         writer = csv.writer(file, dialect=dialect)
         writer.writerows(array)
 
 def re_index(my_data):
-    for i in range(1,len(my_data[:])):
-        my_data[i,0] = i
-        #my_data[i,5] = str(my_data[i,5]).replace(",",".")
+    my_data[:,0] = range(my_data.shape[0])
     return my_data
+
+def index(my_data):
+    if not my_data[0,0] == "Nr":
+        my_data = numpy.insert(my_data,0,range(my_data.shape[0]),1)
+        my_data[0,0] = "Nr"
+        return my_data
+    else:
+        return re_index(my_data)
 
 def import_csv(path,encoding="utf-8",dialect="unix",failsafe=[["Nr","Titel"],[1,"KEINE DATEN GELADEN"]]):
     if DEBUG: print(path)

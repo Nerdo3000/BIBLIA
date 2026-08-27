@@ -24,6 +24,7 @@ if "de_" == locale.getlocale()[0][:3]:
     ANALYSIS_MAX = "Maximum:"
     ANALYSIS_MOD = "Modus:"
     ANALYSIS_HEAD = "Auswertung der Werte:"
+    ANALYSIS_ANALYSIS = "Auswertung:"
     #################################
     TOOLTIP_BIG_SMALL = "Soll Groß- und Kleinschreibung beim suchen ignoriert werden?"
     TOOLTIP_ALL_OR_ANY = "Vergleichbar mit einem logischen UND oder ODER: Müssen ALLE oder (mindestens) EIN Parameter übereinstimmen?"
@@ -76,7 +77,7 @@ if "de_" == locale.getlocale()[0][:3]:
     #################################
     TAB_ENTRIES = "Eintragen"
     TAB_SEARCH = "Suchen"
-    TAB_ANALYSIS = "Analysieren"
+    TAB_ANALYSIS = "Analyse"
     TAB_LOCATION = "Standorte"
     #################################
     LAYOUTER_ADD_ENTRY = "Hinzufügen"
@@ -106,8 +107,9 @@ else:
     ANALYSIS_MEDIAN = "Median:"
     ANALYSIS_MIN = "Minimum:"
     ANALYSIS_MAX = "Maximum:"
-    ANALYSIS_MOD = "Modus:"
+    ANALYSIS_MOD = "Mode:"
     ANALYSIS_HEAD = "Analysis of the values:"
+    ANALYSIS_ANALYSIS = "Analysis:"
     #################################
     TOOLTIP_BIG_SMALL = "Should the search ignore upper and lower case?"
     TOOLTIP_ALL_OR_ANY = "Similar to a logical AND or OR: Do ALL or (at least) ONE parameter have to match?"

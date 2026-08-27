@@ -1,5 +1,5 @@
 # BIBLIA
-BIBLIA is an application I made for cataloguing and sorting my books, but it can essentially read any data provided in CSV form (unix dialect) (make sure that your first column is an empty column, as its used for indexing). 
+BIBLIA is an application I made for cataloguing and sorting my books, but it can essentially read any data provided in CSV form with the unix dialect. It can somewhat supports excel dialect, as well as the german ";" delimiter. 
 
 It features a regex search system, autocompletion, some analysis, a position system (when you want to know where you books are (the syntax for which is "B##H#_". B for book, # are numbers, H for height (in you shelf) and at the end you can put a char for denoting the room you shelf is in. An example would be B01H3L)) and is generally quite lightweight. Just load in a CSV. You can also provide a .meta.csv file, with the same name as you CSV, which contains style information and things like that (I will provide an example). The App switches automatically between Englisch and German, as well as light and dark mode, based on system settings.
 
