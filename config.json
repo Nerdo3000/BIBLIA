@@ -64,6 +64,10 @@
   {
    "optionDest": "datas",
    "value": "./docs:docs/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "./LICENSE;."
   }
  ],
  "nonPyinstallerOptions": {
