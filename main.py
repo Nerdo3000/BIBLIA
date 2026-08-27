@@ -31,7 +31,7 @@ try:
     import re
     import profiler
 
-    sg.set_options(suppress_key_guessing=True)
+    sg.set_options(suppress_key_guessing=True,suppress_error_popups=True)
 
     GLOBAL_EMPTY_OVERRIDE = False
     GLOBAL_SEARCH = False
@@ -127,6 +127,9 @@ try:
             return False
         return True
 
+    def remove_regex(string):
+        return string.replace("?",r"\?").replace(".",r"\.").replace("+",r"\+").replace("*",r"\*").replace("(",r"\(").replace(")",r"\)").replace("[",r"\[").replace("]",r"\]").replace("\\\\","\\")
+
     def search():
         global table_data, GLOBAL_EMPTY_OVERRIDE, GLOBAL_SEARCH
         parameters = []
@@ -146,7 +149,7 @@ try:
             window["-NEW-"].update(disabled=True)
             table_data.append(my_data[0])
 
-            values = [x if (window["-REGEX?-"].get()) else str(x).replace("?","\\?").replace(".","\\.").replace("+","\\+").replace("*","\\*") for x in values]
+            values = [x if (window["-REGEX?-"].get()) else remove_regex(str(x)) for x in values]
 
             for line in my_data[1:]:
                 if window["-ALL_OR_ANY?-"].get():
@@ -763,8 +766,11 @@ try:
                     new_list = []
                 
                     for val in set_list:
-                        if re.search(current, str(val).lower()):
-                            new_list.append(val)
+                        try:
+                            if re.search(remove_regex(current), str(val).lower()):
+                                new_list.append(val)
+                        except re.PatternError:
+                            if DEBUG: print(remove_regex(current))
                     if not str(window[key_name].get()) in new_list:
                         new_list.insert(0, str(window[key_name].get()))
                 if DEBUG: print(new_list)
@@ -836,7 +842,7 @@ try:
                         auto_window["AUTOBOX"].metadata = 0
                     if auto_window["AUTOBOX"].metadata > len(auto_window["AUTOBOX"].Values) - 1:
                         auto_window["AUTOBOX"].metadata = len(auto_window["AUTOBOX"].Values) - 1
-                
+                    
                     auto_window["AUTOBOX"].update(set_to_index=auto_window["AUTOBOX"].metadata, scroll_to_index=auto_window["AUTOBOX"].metadata)
                     if DEBUG: print(auto_window["AUTOBOX"].metadata, len(auto_window["AUTOBOX"].Values) - 1)
                 except NameError:
