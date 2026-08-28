@@ -132,7 +132,7 @@ try:
                 parameters.append(i)
                 values.append(window[Layouter.search_key_list[i]].get())
         table_data = []
-        if DEBUG: print(len(parameters))
+        if DEBUG: print("Search parameters: "+str(len(parameters)))
         if len(parameters) == 0:
             GLOBAL_SEARCH = False
             window["-NEW-"].update(disabled=False)
@@ -159,7 +159,6 @@ try:
                             break
                 if truths:
                     table_data.append(line)
-        profiler.profiling_end("Before Search")
         if len(table_data) == 1:
             if DEBUG: print("UH OH")
             n = numpy.empty_like(my_data[0])
@@ -182,13 +181,10 @@ try:
             window["-IDX_FRONT-"].update(disabled=False)
             window["-IDX_R-"].update(disabled=False)
             window["-IDX_BACK-"].update(disabled=False)
-            profiler.profiling_end("Before to list")
             table_data = numpy.array(table_data)
             window["LEN"].update("von " + str(data_len()))
-            profiler.profiling_end("Before ANALYSIS")
             set_IDX(1)
         load_book(get_IDX())
-        profiler.profiling_end("After Search")
 
     def convert_to_float_if_possible(a):
         try:
@@ -278,6 +274,8 @@ try:
         return string + str(layouter.key_counter)
 
     def simple_search_update():
+        global prev_simple_search 
+        prev_simple_search = window["-SIMPLE_SEARCH-"].get()
         if window["-SIMPLE_SEARCH-"].get() == "":
             lock_search(False)
             window["-ALL_OR_ANY?-"].update(True, disabled=False)
@@ -351,18 +349,27 @@ try:
         else:
             file_name = sg.tk.filedialog.asksaveasfilename(filetypes=filetypes, defaultextension=default_extension, initialdir=init_dir,initialfile=initialfile)
         return file_name
-    
 
+    def update_analysis():
+        global hash_val_ANALYSE
+        profiler.profiling_end("Before update analysis")
+        if hash(table_data.tobytes()) != hash_val_ANALYSE:
+            if DEBUG: print("Changed hash")
+            window["TABLE"].update(select_rows=[get_IDX_input()-1])
+            window["TABLE"].update(table_data[1:].tolist())
+            hash_val_ANALYSE = hash(table_data.tobytes())
+            calc_analysis()
+        profiler.profiling_end("After update analysis")
     import files
     import layouter
 
     def new_main_window():
-        global window, table_data, my_data, hash_val_ANALYSE, hash_val_STANDORT, Layouter, GLOBAL_EMPTY_OVERRIDE, GLOBAL_SEARCH, prev_selected_auto, prev_button 
+        global window, table_data, my_data, hash_val_ANALYSE, hash_val_STANDORT, Layouter, GLOBAL_EMPTY_OVERRIDE, GLOBAL_SEARCH, prev_selected_auto, prev_button, prev_simple_search
         GLOBAL_EMPTY_OVERRIDE = False
         GLOBAL_SEARCH = False
         my_data = files.index(my_data)
         table_data = my_data
-        prev_selected_auto = prev_button = None
+        prev_selected_auto = prev_button = prev_simple_search = None
 
         Layouter = layouter.Layout(my_data, GLOBAL_SAVE_FILE)
 
@@ -499,7 +506,7 @@ try:
             ],
             [
                 sg.TabGroup(
-                    [[sg.Tab(lang.TAB_ENTRIES, tab_buch), sg.Tab(lang.TAB_SEARCH, tab_suche), sg.Tab(lang.TAB_ANALYSIS, tab_analyse, key="ANALYSE"), sg.Tab(lang.TAB_LOCATION, tab_schrank, visible=(Layouter.treat_as_pos!=None), key="STANDORTE")]],
+                    [[sg.Tab(lang.TAB_ENTRIES, tab_buch, key="-TAB-BUCH-"), sg.Tab(lang.TAB_SEARCH, tab_suche), sg.Tab(lang.TAB_ANALYSIS, tab_analyse, key="ANALYSE"), sg.Tab(lang.TAB_LOCATION, tab_schrank, visible=(Layouter.treat_as_pos!=None), key="STANDORTE")]],
                     expand_y=True,
                     enable_events=True,
                     key="-TAB-",
@@ -524,7 +531,7 @@ try:
         # Display and interact with the Window using an Event Loop
         lock_input(window["-EDITABLE?-"].get())
         lock_input(window["-EDITABLE?-"].get())
-        window.read(timeout=0)
+        window.read(0)
         window["TABLE"].disable_edit_for_cells([(i, 0) for i in range(len(my_data[:]))])
         window["-IDX-"].update("1")
         window["LEN"].update("von " + str(data_len()))
@@ -552,6 +559,8 @@ try:
             menu_lock(False)
 
     #####################################################################################################################
+    #-------------------------------------------------------------------------------------------------------------------#
+    #####################################################################################################################
 
     file_name = False
     loop_con = False
@@ -569,23 +578,37 @@ try:
         new_data = my_data.tolist()
         if DEBUG: print(GLOBAL_SAVE_FILE)
         files.export(new_data, name=GLOBAL_SAVE_FILE + "__AUTOSAVE.csv")
-        window.perform_long_operation(lambda : time.sleep(30), "AUTOSAVE")
+        window.timer_start(30000,key="AUTOSAVE")
 
     while loop_con:
-        if DEBUG: print("-----------------------------------------------------------------------------------------------------------------------")
-        window_event, event, values = sg.read_all_windows()
-        if DEBUG: print(window_event, event, values)
+        window_event, event, values = sg.read_all_windows(timeout=1000,timeout_key = "TIMEOUT")
+        if DEBUG and window_event != None: print("-----------------------------------------------------------------------------------------------------------------------")
+        if DEBUG and window_event != None: print(window_event, event, values)
         profiler.profiling_start()
         if event == "AUTOSAVE":
             new_data = my_data.tolist()
             if DEBUG: print(GLOBAL_SAVE_FILE)
             files.export(new_data, name=GLOBAL_SAVE_FILE + "__AUTOSAVE.csv")
-            window.perform_long_operation(lambda : time.sleep(30), "AUTOSAVE")
+        
+        if prev_simple_search != window["-SIMPLE_SEARCH-"].get():
+            simple_search_update()
+
         if window_event == None:
             continue
 
         if event == "LOOSE FOCUS":
             close_auto_box()
+            if window["-TAB-"].get() == "ANALYSE":
+                search()
+                update_analysis()
+                    
+            elif window["-TAB-"].get() == "STANDORTE":
+                if Layouter.treat_as_pos != None:
+                    if hash(my_data[1:, Layouter.treat_as_pos].data.tobytes()) != hash_val_STANDORT:
+                        hash_val_STANDORT = hash(my_data[1:, Layouter.treat_as_pos].data.tobytes())
+                        if layouter.key_counter != 0:
+                            window[get_key("ALL_STANDORTE")].update(visible=False)
+                        window.extend_layout(window["STANDORTE"], layouter.make_layout_standort(my_data[1:, Layouter.treat_as_pos].tolist()))
 
         elif event == sg.WINDOW_CLOSE_ATTEMPTED_EVENT or event == lang.MENU_CLOSE or event == None:
             layoutPOP = [
@@ -732,10 +755,6 @@ try:
             write_book_key(get_IDX(), event)
             update_hashes()
 
-        #elif event in Layouter.search_key_list:
-        #    search()
-
-
         elif re.search(" AUTO_COMBO ", event):
             if not re.search("SEARCH",event) and window["-EDITABLE?-"].get(): close_auto_box(); continue
             key = event.replace(" AUTO_COMBO ", "")
@@ -819,9 +838,9 @@ try:
             elif re.search("UNFOCUS",key):
                 key_name = key.removesuffix("UNFOCUS")
                 try:
-                    e,v = auto_window.read(100,timeout_key="TIMEOUT")
+                    e,v = auto_window.read(10,timeout_key="TIMEOUT")
+                    if DEBUG: print(e,v)
                     if e!="TIMEOUT" and e!=None:
-                        if DEBUG: print(e,v)
                         if re.search("AUTO_COMBO ENTER",e):
                             key_name = e.removesuffix(" AUTO_COMBO ENTER")
                             if str(auto_window["AUTOBOX"].get()) != "":
@@ -865,6 +884,7 @@ try:
             set_IDX(data_len())
             load_book(get_IDX())
             window["LEN"].update("von " + str(data_len()))
+            window["-TAB-BUCH-"].select()
 
         elif event == "-IDX_FRONT-" and not GLOBAL_EMPTY_OVERRIDE:
             set_IDX(1)
@@ -885,11 +905,7 @@ try:
 
         elif event == "-TAB-":
             if values["-TAB-"] == "ANALYSE":
-                window["TABLE"].update(table_data[1:].tolist())
-                window["TABLE"].update(select_rows=[get_IDX_input()-1])
-                if hash(table_data.data.tobytes()) != hash_val_ANALYSE:
-                    hash_val_ANALYSE = hash(table_data.data.tobytes())
-                    calc_analysis()
+                update_analysis()
 
             elif values["-TAB-"] == "STANDORTE":
                 if Layouter.treat_as_pos != None:
@@ -919,9 +935,6 @@ try:
             search()
         elif event == "-REGEX?-":
             search()
-
-        elif event == "-SIMPLE_SEARCH-":
-            simple_search_update()
 
         elif event == "Copyright::COPY":
             f = open(files.resource_path("./LICENSE"), encoding="utf-8")
@@ -968,7 +981,6 @@ try:
             if prev_button != None: window[prev_button].update(disabled=False)
             name = event.removeprefix("!CLEAR")
             window[name].update("")
-            if DEBUG: print(vars(Layouter))
             if event == "!CLEAR-SIMPLE_SEARCH-":
                 simple_search_update()
             elif re.search("SEARCH", name):
