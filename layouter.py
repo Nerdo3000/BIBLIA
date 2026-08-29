@@ -36,13 +36,13 @@ class Layout:
         self.meta_data_raw = files.import_csv(GLOBAL_SAVE_FILE.removesuffix(".csv")+".meta.csv",failsafe=[])
         try:
             if not self.meta_data_raw[0,0] == "Nr":
-                self.meta_data_raw = numpy.insert(self.meta_data_raw,0,["Nr","none","true","Nr",lang.ANALYSIS_ANALYSIS,"0","9","","r"],1)
+                self.meta_data_raw = numpy.insert(self.meta_data_raw,0,["Nr","none","true","Nr","0","9","","r"],1)
         except IndexError:
             pass
         if DEBUG: print(self.meta_data_raw.shape)
-        if self.meta_data_raw.shape != (9, len(table_header)):
-            if self.meta_data_raw.shape[0]==9:
-                new_data = numpy.full((9,len(table_header)),"",object)
+        if self.meta_data_raw.shape != (8, len(table_header)):
+            if self.meta_data_raw.shape[0]==8:
+                new_data = numpy.full((8,len(table_header)),"",object)
                 if self.meta_data_raw.shape[1]>len(table_header):
                     if DEBUG: print(new_data.shape)
                     if DEBUG: print(self.meta_data_raw[:,:len(table_header)].shape)
@@ -57,18 +57,16 @@ class Layout:
                     if DEBUG: print(new_data)
                 self.meta_data_raw = new_data
             else:
-                self.meta_data_raw = numpy.full((9,len(table_header)),"",object)
+                self.meta_data_raw = numpy.full((8,len(table_header)),"",object)
                 self.meta_data_raw[1].fill("medium")
                 self.meta_data_raw[1,0] = "none"
                 self.meta_data_raw[2].fill("true")
                 self.meta_data_raw[3,:] = table_header
-                self.meta_data_raw[4,:] = table_header
-                self.meta_data_raw[4,0] = lang.ANALYSIS_ANALYSIS
+                self.meta_data_raw[4].fill(10)
+                self.meta_data_raw[4,0] = 0
                 self.meta_data_raw[5].fill(10)
-                self.meta_data_raw[5,0] = 0
-                self.meta_data_raw[6].fill(10)
-                self.meta_data_raw[6,0] = 9
-                self.meta_data_raw[8].fill("r")
+                self.meta_data_raw[5,0] = 9
+                self.meta_data_raw[7].fill("r")
         
         self.meta_data_raw[0,:] = table_header
 
@@ -114,6 +112,8 @@ class Layout:
                 self.combo_elements.append(key_name+"ADD_ENTRY")
                 self.combo_elements_search.append("SEARCH"+key_name)
             elif displ=="none": pass
+            elif displ=="big":
+                self.lock_complex.append(key_name)
             elif displ=="medium":
                 self.combo_elements.append(key_name)
                 self.combo_elements_search.append("SEARCH"+key_name)
@@ -125,14 +125,16 @@ class Layout:
                 self.skip_math.append(idx)
 
             self.col_names.append(str(self.meta_data_raw[3,idx]))
-            self.col_names_alt.append(str(self.meta_data_raw[4,idx]))
-            self.col_widths.append(int(self.meta_data_raw[5,idx]))
-            self.col_widths_alt.append(int(self.meta_data_raw[6,idx]))
-            if str(self.meta_data_raw[7,idx])=="pos":
+            self.col_widths.append(int(self.meta_data_raw[4,idx]))
+            self.col_widths_alt.append(int(self.meta_data_raw[5,idx]))
+            if str(self.meta_data_raw[6,idx])=="pos":
                 self.treat_as_pos = idx
-            elif str(self.meta_data_raw[7,idx])=="date":
+            elif str(self.meta_data_raw[6,idx])=="date":
                 self.treat_as_date.append(idx)
-            self.col_just.append(self.meta_data_raw[8,idx])
+            self.col_just.append(self.meta_data_raw[7,idx])
+
+        self.col_names_alt = self.col_names
+        self.col_names_alt[0] = lang.ANALYSIS_ANALYSIS
 
     def make_layouts(self):
         layout_left_column = []
@@ -150,22 +152,27 @@ class Layout:
             if self.display_length[key_idx]=="none": continue
             elif self.display_length[key_idx]=="long":
                 layout_left_column.append([sg.Text(head_name,justification="center",expand_x=True,pad=(0,15))])
-                layout_left_column.append([sg.Multiline(size=(40,3),expand_x=True,expand_y=True,key=self.key_list[key_idx],enable_events=True,pad=(0,0))])
-                layout_left_column.append([sg.Column([[sg.Input(key=self.key_list[key_idx]+"ADD_ENTRY",use_readonly_for_disable=True,disabled_readonly_background_color=THIRD_COLOR(sg.theme()),metadata=0,expand_x=True,enable_events=True,expand_y=True,pad=0),sg.Button(lang.LAYOUTER_ADD_ENTRY,pad=0,key=self.key_list[key_idx]+"ADD_ENTRY AUTO_COMBO ENTER")]],expand_x=True,expand_y=False,pad=(0,(0,15)))])
+                layout_left_column.append([sg.Multiline(size=(40,3),expand_x=True,right_click_menu=make_right_click_menu(self.key_list[key_idx]),expand_y=True,key=self.key_list[key_idx],enable_events=True,pad=(0,0))])
+                layout_left_column.append([sg.Column([[sg.Input(key=self.key_list[key_idx]+"ADD_ENTRY",right_click_menu=make_right_click_menu(self.key_list[key_idx]+"ADD_ENTRY"),use_readonly_for_disable=True,disabled_readonly_background_color=THIRD_COLOR(sg.theme()),metadata=0,expand_x=True,enable_events=True,expand_y=True,pad=0),sg.Button(lang.LAYOUTER_ADD_ENTRY,pad=0,key=self.key_list[key_idx]+"ADD_ENTRY AUTO_COMBO ENTER")]],expand_x=True,expand_y=False,pad=(0,(0,15)))])
 
                 #layout_left_column_search.append([sg.Text(head_name,justification="center",expand_x=True,pad=(0,25))])
                 #layout_left_column_search.append([sg.Multiline(size=(40,4),expand_x=True,expand_y=True,key=self.search_key_list[key_idx],enable_events=True,pad=(0,10),tooltip=lang.LAYOUTER_TOOLTIP_SEARCH_SUBSTRING0+head+lang.LAYOUTER_TOOLTIP_SEARCH_SUBSTRING2),sg.Button("X",key="!CLEAR"+self.search_key_list[key_idx],border_width=0,button_color=(OTHER_BUTTON(sg.theme()),sg.theme_background_color()),pad=0,auto_size_button=False,size=(1,1),tooltip=lang.LAYOUTER_CLEAR)])
-                layout_left_column_search.append([sg.Column([[sg.Text(head_name,size=(20,1)),sg.Input(key=self.search_key_list[key_idx],disabled_readonly_background_color=THIRD_COLOR(sg.theme()),use_readonly_for_disable=True,size=(30,1),expand_x=True,enable_events=True,tooltip=lang.LAYOUTER_TOOLTIP_SEARCH_SUBSTRING0+head+lang.LAYOUTER_TOOLTIP_SEARCH_SUBSTRING2),sg.Button("X",key="!CLEAR"+self.search_key_list[key_idx],border_width=0,button_color=(OTHER_BUTTON(sg.theme()),sg.theme_background_color()),pad=0,auto_size_button=False,size=(1,1),tooltip=lang.LAYOUTER_CLEAR)]],expand_x=True,pad=(0,10))])
+                layout_left_column_search.append([sg.Column([[sg.Text(head_name,size=(20,1)),sg.Input(key=self.search_key_list[key_idx],right_click_menu=make_right_click_menu(self.search_key_list[key_idx]),disabled_readonly_background_color=THIRD_COLOR(sg.theme()),use_readonly_for_disable=True,size=(30,1),expand_x=True,enable_events=True,tooltip=lang.LAYOUTER_TOOLTIP_SEARCH_SUBSTRING0+head+lang.LAYOUTER_TOOLTIP_SEARCH_SUBSTRING2),sg.Button("X",key="!CLEAR"+self.search_key_list[key_idx],border_width=0,button_color=(OTHER_BUTTON(sg.theme()),sg.theme_background_color()),pad=0,auto_size_button=False,size=(1,1),tooltip=lang.LAYOUTER_CLEAR)]],expand_x=True,pad=(0,10))])
+            elif self.display_length[key_idx]=="big":
+                layout_left_column.append([sg.Text(head_name,justification="center",expand_x=True,pad=(0,15))])
+                layout_left_column.append([sg.Multiline(size=(40,3),right_click_menu=make_right_click_menu(self.key_list[key_idx]),expand_x=True,expand_y=True,key=self.key_list[key_idx],enable_events=True,pad=(0,0))])
+
+                layout_left_column_search.append([sg.Column([[sg.Text(head_name,size=(20,1)),sg.Input(key=self.search_key_list[key_idx],right_click_menu=make_right_click_menu(self.search_key_list[key_idx]),disabled_readonly_background_color=THIRD_COLOR(sg.theme()),use_readonly_for_disable=True,size=(30,1),expand_x=True,enable_events=True,tooltip=lang.LAYOUTER_TOOLTIP_SEARCH_SUBSTRING0+head+lang.LAYOUTER_TOOLTIP_SEARCH_SUBSTRING2),sg.Button("X",key="!CLEAR"+self.search_key_list[key_idx],border_width=0,button_color=(OTHER_BUTTON(sg.theme()),sg.theme_background_color()),pad=0,auto_size_button=False,size=(1,1),tooltip=lang.LAYOUTER_CLEAR)]],expand_x=True,pad=(0,10))])
             elif self.display_length[key_idx]=="medium":
-                layout_left_column.append([sg.Column([[sg.Text(head_name,size=(20,1)),sg.Input([],key=self.key_list[key_idx],disabled_readonly_background_color=THIRD_COLOR(sg.theme()),use_readonly_for_disable=True,metadata=0,size=(30,1),expand_x=True,enable_events=True)]],expand_x=True,pad=(0,10))])
-                layout_left_column_search.append([sg.Column([[sg.Text(head_name,size=(20,1)),sg.Input(key=self.search_key_list[key_idx],disabled_readonly_background_color=THIRD_COLOR(sg.theme()),use_readonly_for_disable=True,size=(30,1),expand_x=True,enable_events=True,tooltip=lang.LAYOUTER_TOOLTIP_SEARCH_SUBSTRING0+head+lang.LAYOUTER_TOOLTIP_SEARCH_SUBSTRING2),sg.Button("X",key="!CLEAR"+self.search_key_list[key_idx],border_width=0,button_color=(OTHER_BUTTON(sg.theme()),sg.theme_background_color()),pad=0,auto_size_button=False,size=(1,1),tooltip=lang.LAYOUTER_CLEAR)]],expand_x=True,pad=(0,10))])
+                layout_left_column.append([sg.Column([[sg.Text(head_name,size=(20,1)),sg.Input([],right_click_menu=make_right_click_menu(self.key_list[key_idx]),key=self.key_list[key_idx],disabled_readonly_background_color=THIRD_COLOR(sg.theme()),use_readonly_for_disable=True,metadata=0,size=(30,1),expand_x=True,enable_events=True)]],expand_x=True,pad=(0,10))])
+                layout_left_column_search.append([sg.Column([[sg.Text(head_name,size=(20,1)),sg.Input(key=self.search_key_list[key_idx],right_click_menu=make_right_click_menu(self.search_key_list[key_idx]),disabled_readonly_background_color=THIRD_COLOR(sg.theme()),use_readonly_for_disable=True,size=(30,1),expand_x=True,enable_events=True,tooltip=lang.LAYOUTER_TOOLTIP_SEARCH_SUBSTRING0+head+lang.LAYOUTER_TOOLTIP_SEARCH_SUBSTRING2),sg.Button("X",key="!CLEAR"+self.search_key_list[key_idx],border_width=0,button_color=(OTHER_BUTTON(sg.theme()),sg.theme_background_color()),pad=0,auto_size_button=False,size=(1,1),tooltip=lang.LAYOUTER_CLEAR)]],expand_x=True,pad=(0,10))])
                 
             elif self.display_length[key_idx]=="short":
                 layout_right_column_l.append([sg.Text(head_name,size=(15,1),pad=(0,10))])
                 layout_right_column_l_search.append([sg.Text(head_name,size=(15,1),pad=(0,10))])
 
-                layout_right_column_r.append([sg.Input([],key=self.key_list[key_idx],use_readonly_for_disable=True,disabled_readonly_background_color=THIRD_COLOR(sg.theme()),metadata=0,enable_events=True,size=(10,1),pad=(0,10),expand_x=True)])
-                layout_right_column_r_search.append([sg.Input(key=self.search_key_list[key_idx],use_readonly_for_disable=True,disabled_readonly_background_color=THIRD_COLOR(sg.theme()),size=(10,1),pad=(0,10),enable_events=True,expand_x=True,tooltip=lang.LAYOUTER_TOOLTIP_SEARCH_SUBSTRING0+head+lang.LAYOUTER_TOOLTIP_SEARCH_SUBSTRING2),sg.Button("X",key="!CLEAR"+self.search_key_list[key_idx],border_width=0,button_color=(OTHER_BUTTON(sg.theme()),sg.theme_background_color()),pad=0,auto_size_button=False,size=(1,1),tooltip=lang.LAYOUTER_CLEAR)])
+                layout_right_column_r.append([sg.Input([],key=self.key_list[key_idx],right_click_menu=make_right_click_menu(self.key_list[key_idx]),use_readonly_for_disable=True,disabled_readonly_background_color=THIRD_COLOR(sg.theme()),metadata=0,enable_events=True,size=(10,1),pad=(0,10),expand_x=True)])
+                layout_right_column_r_search.append([sg.Input(key=self.search_key_list[key_idx],right_click_menu=make_right_click_menu(self.search_key_list[key_idx]),use_readonly_for_disable=True,disabled_readonly_background_color=THIRD_COLOR(sg.theme()),size=(10,1),pad=(0,10),enable_events=True,expand_x=True,tooltip=lang.LAYOUTER_TOOLTIP_SEARCH_SUBSTRING0+head+lang.LAYOUTER_TOOLTIP_SEARCH_SUBSTRING2),sg.Button("X",key="!CLEAR"+self.search_key_list[key_idx],border_width=0,button_color=(OTHER_BUTTON(sg.theme()),sg.theme_background_color()),pad=0,auto_size_button=False,size=(1,1),tooltip=lang.LAYOUTER_CLEAR)])
 
         layout_right_column = sg.Column([[
                 sg.Column(layout_right_column_l,expand_x=True),  
@@ -197,6 +204,9 @@ class Layout:
             window[key].bind("<Key-Return>"," AUTO_COMBO ENTER")
             window[key].bind("<Key-Up>"," AUTO_COMBO SELECT_UP")
 
+def make_right_click_menu(key_name):
+    #sg.clipboard_get
+    return ["", [lang.MENU_RIGHT_CLICK_CUT+"::"+key_name, lang.MENU_RIGHT_CLICK_COPY+"::"+key_name, lang.MENU_RIGHT_CLICK_PASTE+"::"+key_name, lang.BIBLIA_APP_CANCEL]]
 
 def make_layout_standort(pos_strip):
     global key_counter

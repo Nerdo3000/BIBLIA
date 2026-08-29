@@ -97,6 +97,8 @@ try:
     def lock_input(state):
         for key_name in Layouter.combo_elements:
             window[key_name].update(disabled=state)
+            if re.search("ADD_ENTRY",key_name):
+                window[key_name + " AUTO_COMBO ENTER"].update(disabled=state)
 
         for key_name in Layouter.lock_complex:
             window[key_name].update(disabled=state)
@@ -104,7 +106,6 @@ try:
                 window[key_name].Widget.config(bg=THIRD_COLOR(sg.theme()))
             else:
                 window[key_name].Widget.config(bg=sg.theme_input_background_color())
-            window[key_name + "ADD_ENTRY AUTO_COMBO ENTER"].update(disabled=state)
         lock_misc(state)
 
     def lock_misc(state):
@@ -495,7 +496,7 @@ try:
                     [
                         [
                             sg.Text(lang.SIMPLE_SEARCH),
-                            sg.Input(key="-SIMPLE_SEARCH-", enable_events=True, size=(5, 1), expand_x=True, tooltip=lang.TOOLTIP_SIMPLE_SEARCH),
+                            sg.Input(key="-SIMPLE_SEARCH-", enable_events=True, size=(5, 1), expand_x=True, tooltip=lang.TOOLTIP_SIMPLE_SEARCH,right_click_menu=layouter.make_right_click_menu("-SIMPLE_SEARCH-")),
                             sg.Button("X", key="!CLEAR-SIMPLE_SEARCH-", border_width=0, button_color=(OTHER_BUTTON(sg.theme()),sg.theme_background_color()), pad=0, auto_size_button=False, size=(1, 1),tooltip=lang.TOOLTIP_CLEAR_SIMPLE_SEARCH),
                         ]
                     ],
@@ -754,6 +755,82 @@ try:
         elif event in Layouter.key_list:
             write_book_key(get_IDX(), event)
             update_hashes()
+        
+        elif re.search(lang.MENU_RIGHT_CLICK_CUT+"::",event):
+            key_name = event.replace(lang.MENU_RIGHT_CLICK_CUT+"::", "")
+            try:
+                try:
+                    if window[key_name].Widget.selection_present():
+                        selected_text = window[key_name].Widget.selection_get()
+                    else:
+                        selected_text = ""
+                except AttributeError:
+                    selected_text = window[key_name].Widget.selection_get()
+            except sg.tk.TclError:
+                selected_text = ""
+            sg.clipboard_set(selected_text)
+            if DEBUG: print("Cut: "+selected_text)
+            if not ((key_name in Layouter.key_list or key_name in Layouter.combo_elements) and window["-EDITABLE?-"].get()):
+                try:
+                    index_first = str(window[key_name].Widget.index("sel.first"))
+                    index_last = str(window[key_name].Widget.index("sel.last"))
+                    index_first = index_first.split(".")
+                    index_last = index_last.split(".")
+                    org_text = str(window[key_name].get()).splitlines(keepends=True)
+                    if len(org_text)==0: org_text = [""]
+                    if len(index_first)==1: #simple input element
+                        new_str = org_text[0][:int(index_first[0])] + org_text[0][int(index_last[0]):] 
+                        window[key_name].update(new_str,move_cursor_to=int(index_first[0]),select=False)
+                    elif len(index_first)==2: #text multiline
+                        if index_first[0]!=index_last[0]: #different lines
+                            org_text[int(index_first[0])-1] = org_text[int(index_first[0])-1][:int(index_first[1])]
+                            org_text[int(index_last[0])-1] = org_text[int(index_last[0])-1][int(index_last[1]):]
+                        else: #same line
+                            org_text[int(index_first[0])-1]=org_text[int(index_first[0])-1][:int(index_first[1])] + org_text[int(index_first[0])-1][int(index_last[1]):]
+                        new_str = "".join(org_text)
+                        window[key_name].update(new_str)
+                        window[key_name].Widget.mark_set("insert", ".".join(index_first))
+                    else: #i have no fucking clue
+                        pass
+                except sg.tk.TclError:
+                    pass
+        elif re.search(lang.MENU_RIGHT_CLICK_COPY+"::",event):
+            key_name = event.replace(lang.MENU_RIGHT_CLICK_COPY+"::", "")
+            try:
+                try:
+                    if window[key_name].Widget.selection_present():
+                        selected_text = window[key_name].Widget.selection_get()
+                    else:
+                        selected_text = ""
+                except AttributeError:
+                    selected_text = window[key_name].Widget.selection_get()
+            except sg.tk.TclError:
+                selected_text = ""
+            sg.clipboard_set(selected_text)
+            if DEBUG: print("Copy: "+selected_text)
+        elif re.search(lang.MENU_RIGHT_CLICK_PASTE+"::",event):
+            if DEBUG: print("Paste: "+sg.clipboard_get())
+            key_name = event.replace(lang.MENU_RIGHT_CLICK_PASTE+"::", "")
+            if not ((key_name in Layouter.key_list or key_name in Layouter.combo_elements) and window["-EDITABLE?-"].get()):
+                try:
+                    index_first = str(window[key_name].Widget.index("insert"))
+                    print(index_first)
+                    index_first = index_first.split(".")
+                    org_text = str(window[key_name].get()).splitlines(keepends=True)
+                    if len(org_text)==0: org_text = [""]
+                    if len(index_first)==1: #simple input element
+                        new_str = org_text[0][:int(index_first[0])] + sg.clipboard_get() + org_text[0][int(index_first[0]):]
+                        window[key_name].update(new_str,move_cursor_to=int(index_first[0]),select=False)
+                    elif len(index_first)==2: #text multiline
+                        org_text[int(index_first[0])-1]=org_text[int(index_first[0])-1][:int(index_first[1])] + sg.clipboard_get() + org_text[int(index_first[0])-1][int(index_first[1]):]
+                        new_str = "".join(org_text)
+                        window[key_name].update(new_str)
+                        window[key_name].Widget.mark_set("insert", ".".join(index_first))
+                    else: #i have no fucking clue
+                        pass
+                except sg.tk.TclError:
+                    pass
+
 
         elif re.search(" AUTO_COMBO ", event):
             if not re.search("SEARCH",event) and window["-EDITABLE?-"].get(): close_auto_box(); continue

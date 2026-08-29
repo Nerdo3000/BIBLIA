@@ -101,6 +101,9 @@ if "de_" == locale.getlocale()[0][:3]:
     MENU_CLOSE = "Schließen::CLOSE"
     MENU_ABOUT = "Über"
     MENU_LIBS = "Bibliotheken"
+    MENU_RIGHT_CLICK_CUT = "Ausschneiden"
+    MENU_RIGHT_CLICK_COPY = "Kopieren"
+    MENU_RIGHT_CLICK_PASTE = "Einfügen"
 else: 
     ANALYSIS_SUM = "Sum:"
     ANALYSIS_ARITH = "Arith. M.:"
@@ -186,3 +189,6 @@ else:
     MENU_CLOSE = "Close::CLOSE"
     MENU_ABOUT = "About"
     MENU_LIBS = "Librarys"
+    MENU_RIGHT_CLICK_CUT = "Cut"
+    MENU_RIGHT_CLICK_COPY = "Copy"
+    MENU_RIGHT_CLICK_PASTE = "Paste"
