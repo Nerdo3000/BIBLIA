@@ -73,6 +73,9 @@ if "de_" == locale.getlocale()[0][:3]:
     BIBLIA_APP_YOU_WANNA_REALY_DELETE_ALL_FR = "Sind Sie sich wirklich wirklich Sicher?\nFolgende Einträge sind betroffen:"
     BIBLIA_APP_CONFIRM_DELETE = "Löschen Bestätigen"
     SIMPLE_SEARCH = "Einfache Suche:"
+    ADD_IMAGE = "Bild laden"
+    CLEAR_IMAGE = "Bild löschen"
+    IMAGE_FILETYPES = "Bilder"
 
     #################################
     TAB_ENTRIES = "Eintragen"
@@ -161,6 +164,9 @@ else:
     BIBLIA_APP_YOU_WANNA_REALY_DELETE_ALL = "Are you sure you want to delete ALL entries in the current selection?\n This action is EXTREMELY DESTRUCTIVE and CANNOT be undone"
     BIBLIA_APP_YOU_WANNA_REALY_DELETE_ALL_FR = "Are you really, really sure?\nThe following entries are affected:"
     SIMPLE_SEARCH = "Simple search"
+    ADD_IMAGE = "Load image"
+    CLEAR_IMAGE = "Delete image"
+    IMAGE_FILETYPES = "Images"
 
     #################################
     TAB_ENTRIES = "Enter Data"

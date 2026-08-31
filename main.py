@@ -35,6 +35,7 @@ try:
 
     GLOBAL_EMPTY_OVERRIDE = False
     GLOBAL_SEARCH = False
+    FLAG_MY_DATA_CHANGED = FLAG_TABLE_DATA_CHANGED = False
     GLOBAL_SAVE_FILE = ""
     from style import *
 
@@ -106,6 +107,10 @@ try:
                 window[key_name].Widget.config(bg=THIRD_COLOR(sg.theme()))
             else:
                 window[key_name].Widget.config(bg=sg.theme_input_background_color())
+
+        for key_name in Layouter.images:
+            window[key_name+" ADD IMAGE"].update(disabled=state)
+            window[key_name+" CLEAR IMAGE"].update(disabled=state)
         lock_misc(state)
 
     def lock_misc(state):
@@ -125,13 +130,17 @@ try:
         return string.replace("?",r"\?").replace(".",r"\.").replace("+",r"\+").replace("*",r"\*").replace("(",r"\(").replace(")",r"\)").replace("[",r"\[").replace("]",r"\]").replace("\\\\","\\")
 
     def search():
-        global table_data, GLOBAL_EMPTY_OVERRIDE, GLOBAL_SEARCH
+        global table_data, GLOBAL_EMPTY_OVERRIDE, GLOBAL_SEARCH, FLAG_MY_DATA_CHANGED, FLAG_TABLE_DATA_CHANGED
+        FLAG_TABLE_DATA_CHANGED = True
         parameters = []
         values = []
         for i in range(1, len(Layouter.search_key_list)):
             if window[Layouter.search_key_list[i]].get() != "":
                 parameters.append(i)
-                values.append(window[Layouter.search_key_list[i]].get())
+                if Layouter.search_key_list[i].removeprefix("SEARCH") in Layouter.images:
+                    values.append("^$")
+                else:
+                    values.append(window[Layouter.search_key_list[i]].get())
         table_data = []
         if DEBUG: print("Search parameters: "+str(len(parameters)))
         if len(parameters) == 0:
@@ -263,12 +272,21 @@ try:
         else:
             try:
                 for i in range(1, len(Layouter.key_list)):
-                    window[Layouter.key_list[i]].update(str(my_data[idx, i]).replace("|", "\n"))
+                    if Layouter.key_list[i] in Layouter.images:
+                        bas64 = files.from64(str(my_images[idx, i]))
+                        window[Layouter.key_list[i]].Data = bas64
+                        x,y = window[Layouter.key_list[i]].get_size()
+                        y -= 20
+                        window[Layouter.key_list[i]].update(files.resize_image(bas64,(x,y)))
+                        del bas64
+                    else:
+                        window[Layouter.key_list[i]].update(str(my_data[idx, i]).replace("|", "\n"))
             except (IndexError, ValueError) as e:
                 if DEBUG: print(e)
 
     def write_book_key(idx, key):
-        global my_data
+        global my_data, FLAG_MY_DATA_CHANGED, FLAG_TABLE_DATA_CHANGED
+        FLAG_MY_DATA_CHANGED = True
         my_data[idx, Layouter.key_list.index(key)] = str(window[key].get()).replace("\n", "|")
 
     def get_key(string):
@@ -295,11 +313,6 @@ try:
         lock_search(False)
         window["-ALL_OR_ANY?-"].update(disabled=False)
         search()
-
-    def update_hashes():
-        global hash_val_STANDORT, hash_val_ANALYSE
-        # hash_val_STANDORT = None
-        hash_val_ANALYSE = None
 
     def menu_lock(state):
         global GLOBAL_EMPTY_OVERRIDE
@@ -352,27 +365,39 @@ try:
         return file_name
 
     def update_analysis():
-        global hash_val_ANALYSE
-        profiler.profiling_end("Before update analysis")
-        if hash(table_data.tobytes()) != hash_val_ANALYSE:
-            if DEBUG: print("Changed hash")
+        global FLAG_TABLE_DATA_CHANGED
+        if FLAG_TABLE_DATA_CHANGED:
+            FLAG_TABLE_DATA_CHANGED = False
+            profiler.profiling_end("Before TABLE")
             window["TABLE"].update(select_rows=[get_IDX_input()-1])
             window["TABLE"].update(table_data[1:].tolist())
-            hash_val_ANALYSE = hash(table_data.tobytes())
+            window.read(0)
             calc_analysis()
-        profiler.profiling_end("After update analysis")
+
+    def export_main(array,name="",dialect="unix",encoding="utf-8"):
+        array = array.astype(numpy.dtypes.StringDType)
+        for key_name in Layouter.images:
+            array[:,Layouter.key_list.index(key_name)] = my_images[:,Layouter.key_list.index(key_name)]
+        array = array.tolist()
+        files.export(array,name,dialect,encoding)
+
     import files
     import layouter
 
     def new_main_window():
-        global window, table_data, my_data, hash_val_ANALYSE, hash_val_STANDORT, Layouter, GLOBAL_EMPTY_OVERRIDE, GLOBAL_SEARCH, prev_selected_auto, prev_button, prev_simple_search
+        global window, table_data, my_data, my_images, FLAG_MY_DATA_CHANGED, FLAG_TABLE_DATA_CHANGED, Layouter, GLOBAL_EMPTY_OVERRIDE, GLOBAL_SEARCH, prev_selected_auto, prev_button, prev_simple_search
         GLOBAL_EMPTY_OVERRIDE = False
         GLOBAL_SEARCH = False
         my_data = files.index(my_data)
+        FLAG_MY_DATA_CHANGED = FLAG_TABLE_DATA_CHANGED = True
         table_data = my_data
         prev_selected_auto = prev_button = prev_simple_search = None
 
         Layouter = layouter.Layout(my_data, GLOBAL_SAVE_FILE)
+
+        my_images = numpy.empty_like(my_data,dtype=numpy.dtypes.StringDType)
+        for key in Layouter.images:
+            my_images[:,Layouter.key_list.index(key)] = files.import_csv(GLOBAL_SAVE_FILE,failsafe=[""]*data_len(),extract=Layouter.key_list.index(key)-1)
 
         layout_left_column, layout_left_column_search, layout_right_column, layout_right_column_search = Layouter.make_layouts()
 
@@ -387,8 +412,7 @@ try:
         layout_right_column_search = sg.Column([[layout_right_column_search], [layout_right_column_search_bottom]], expand_y=True, pad=(50, 0), element_justification="left", expand_x=True)
 
         layout_right_column_bottom = sg.Column(
-            [[sg.Button(lang.DELETE_SINGLE, key="-EINTRAG_LÖSCHEN-",tooltip=lang.TOOLTIP_DELETE_SINGLE)], [sg.Button(lang.DELETE_SELECTION, key="-ALLE_LÖSCHEN-",tooltip=lang.TOOLTIP_DELETE_SELECTION)]], vertical_alignment="bottom", expand_x=True
-        )
+            [[sg.Button(lang.DELETE_SINGLE, key="-EINTRAG_LÖSCHEN-",tooltip=lang.TOOLTIP_DELETE_SINGLE),sg.Button(lang.DELETE_SELECTION, key="-ALLE_LÖSCHEN-",tooltip=lang.TOOLTIP_DELETE_SELECTION)]],element_justification="center", vertical_alignment="bottom", expand_x=True)
         layout_right_column = sg.Column([[layout_right_column], [layout_right_column_bottom]], expand_y=True, pad=(50, 0), element_justification="left", expand_x=True)
 
         tab_buch = [
@@ -476,7 +500,7 @@ try:
                     lang.MENU_CLOSE,
                 ],
             ],
-            [lang.MENU_ABOUT, ["Copyright::COPY", "Regex::HILFE", lang.MENU_LIBS, ["NumPy::COPYRIGHT", "PySimpleGUI::COPYRIGHT", "darkdetect::COPYRIGHT"]]],
+            [lang.MENU_ABOUT, ["Copyright::COPY", "Regex::HILFE", lang.MENU_LIBS, ["NumPy::COPYRIGHT", "PySimpleGUI::COPYRIGHT", "Pillow::COPYRIGHT", "darkdetect::COPYRIGHT"]]],
         ]
 
         # Define the window's contents
@@ -527,8 +551,6 @@ try:
             icon=ICON,
             finalize=True,
         )
-        hash_val_ANALYSE = None
-        hash_val_STANDORT = None
         # Display and interact with the Window using an Event Loop
         lock_input(window["-EDITABLE?-"].get())
         lock_input(window["-EDITABLE?-"].get())
@@ -547,7 +569,7 @@ try:
         window.bind("<Control-KeyPress-Right>", "-IDX_R-")
         window.bind("<Control-KeyPress-Up>", "-IDX_BACK-")
         window.bind("<Control-KeyPress-Down>", "-IDX_FRONT-")
-        window.bind("<Configure>", "LOOSE FOCUS")
+        #window.bind("<Configure>", "LOOSE FOCUS")
 
         Layouter.bind_all(window)
 
@@ -563,6 +585,8 @@ try:
     #-------------------------------------------------------------------------------------------------------------------#
     #####################################################################################################################
 
+    window_info_tuple = ()
+
     file_name = False
     loop_con = False
     filetypes = [("Comma-separated values", ".csv")]
@@ -571,45 +595,52 @@ try:
 
     if file_name:
         GLOBAL_SAVE_FILE = file_name
+        FLAG_MY_DATA_CHANGED = FLAG_TABLE_DATA_CHANGED = True
         my_data = files.import_csv(GLOBAL_SAVE_FILE)
         new_main_window()
         loop_con = True
 
     if loop_con:
-        new_data = my_data.tolist()
         if DEBUG: print(GLOBAL_SAVE_FILE)
-        files.export(new_data, name=GLOBAL_SAVE_FILE + "__AUTOSAVE.csv")
+        export_main(my_data, name=GLOBAL_SAVE_FILE + "__AUTOSAVE.csv")
         window.timer_start(30000,key="AUTOSAVE")
 
     while loop_con:
-        window_event, event, values = sg.read_all_windows(timeout=1000,timeout_key = "TIMEOUT")
+        window_event, event, values = sg.read_all_windows(timeout=100,timeout_key = "TIMEOUT")
         if DEBUG and window_event != None: print("-----------------------------------------------------------------------------------------------------------------------")
         if DEBUG and window_event != None: print(window_event, event, values)
         profiler.profiling_start()
         if event == "AUTOSAVE":
-            new_data = my_data.tolist()
             if DEBUG: print(GLOBAL_SAVE_FILE)
-            files.export(new_data, name=GLOBAL_SAVE_FILE + "__AUTOSAVE.csv")
+            export_main(my_data, name=GLOBAL_SAVE_FILE + "__AUTOSAVE.csv")
         
         if prev_simple_search != window["-SIMPLE_SEARCH-"].get():
             simple_search_update()
 
+        if (window.size,(window.TKroot.winfo_x(),window.TKroot.winfo_y()))!=window_info_tuple:
+            window_info_tuple = (window.size,(window.TKroot.winfo_x(),window.TKroot.winfo_y()))
+            if DEBUG: print(window_info_tuple)
+            if DEBUG: print("Changed window config")
+            close_auto_box()
+            for key in Layouter.images:
+                x,y = window[key].get_size()
+                y -= 20
+                window[key].update(files.resize_image(window[key].Data,(x,y)))
+                
+
+        if window["-TAB-"].get() == "ANALYSE":
+            update_analysis()
+                    
+        elif window["-TAB-"].get() == "STANDORTE":
+            if Layouter.treat_as_pos != None:
+                if FLAG_MY_DATA_CHANGED:
+                    FLAG_MY_DATA_CHANGED = False
+                    if layouter.key_counter != 0:
+                        window[get_key("ALL_STANDORTE")].update(visible=False)
+                    window.extend_layout(window["STANDORTE"], layouter.make_layout_standort(my_data[1:, Layouter.treat_as_pos].tolist()))
+
         if window_event == None:
             continue
-
-        if event == "LOOSE FOCUS":
-            close_auto_box()
-            if window["-TAB-"].get() == "ANALYSE":
-                search()
-                update_analysis()
-                    
-            elif window["-TAB-"].get() == "STANDORTE":
-                if Layouter.treat_as_pos != None:
-                    if hash(my_data[1:, Layouter.treat_as_pos].data.tobytes()) != hash_val_STANDORT:
-                        hash_val_STANDORT = hash(my_data[1:, Layouter.treat_as_pos].data.tobytes())
-                        if layouter.key_counter != 0:
-                            window[get_key("ALL_STANDORTE")].update(visible=False)
-                        window.extend_layout(window["STANDORTE"], layouter.make_layout_standort(my_data[1:, Layouter.treat_as_pos].tolist()))
 
         elif event == sg.WINDOW_CLOSE_ATTEMPTED_EVENT or event == lang.MENU_CLOSE or event == None:
             layoutPOP = [
@@ -619,8 +650,7 @@ try:
             windowPOP = sg.Window(lang.BIBLIA_APP_CLOSE, layoutPOP, font=FONT, finalize=True, icon=ICON)
             eventPOP, valuesPOP = windowPOP.read()
             if eventPOP == "-SAVE-":
-                new_data = my_data.tolist()
-                files.export(new_data, name=GLOBAL_SAVE_FILE)
+                export_main(my_data, name=GLOBAL_SAVE_FILE)
                 try:
                     remove(GLOBAL_SAVE_FILE + "__AUTOSAVE.csv")
                 except FileNotFoundError:
@@ -644,13 +674,13 @@ try:
             if file_name:
                 GLOBAL_SAVE_FILE = file_name
                 window.close()
+                FLAG_MY_DATA_CHANGED = FLAG_TABLE_DATA_CHANGED = True
                 my_data = files.import_csv(GLOBAL_SAVE_FILE)
                 new_main_window()
 
         elif event == lang.MENU_SAVE_MAIN:
-            new_data = my_data.tolist()
             if files.file_exists(GLOBAL_SAVE_FILE):
-                files.export(new_data, name=GLOBAL_SAVE_FILE)
+                export_main(my_data, name=GLOBAL_SAVE_FILE)
         elif event == lang.MENU_SAVE_AS:
             filetypes = [("Comma-separated values", ".csv")]
             init_dir = files.resource_path("./")
@@ -658,8 +688,7 @@ try:
             file_name = dialog_save(filetypes,init_dir,default_extension)
             
             if file_name:
-                new_data = my_data.tolist()
-                files.export(new_data, name=file_name)
+                export_main(my_data, name=file_name)
         elif event==lang.MENU_IMPORT_EXCEL:
             filetypes = [("Comma-separated values", ".csv")]
             init_dir = files.resource_path("./")
@@ -668,6 +697,7 @@ try:
             if file_name:
                 GLOBAL_SAVE_FILE = file_name
                 window.close()
+                FLAG_MY_DATA_CHANGED = FLAG_TABLE_DATA_CHANGED = True
                 my_data = files.import_csv(GLOBAL_SAVE_FILE,"utf-8-sig","excel")
                 new_main_window()
         elif event==lang.MENU_IMPORT_EXCEL_GERMAN:
@@ -678,6 +708,7 @@ try:
             if file_name:
                 GLOBAL_SAVE_FILE = file_name
                 window.close()
+                FLAG_MY_DATA_CHANGED = FLAG_TABLE_DATA_CHANGED = True
                 my_data = files.import_csv(GLOBAL_SAVE_FILE,"utf-8-sig","excel-german")
                 for row_idx in range(my_data.shape[0]):
                     for col_idx in range(my_data.shape[1]):
@@ -685,14 +716,17 @@ try:
                             my_data[row_idx,col_idx] = str(my_data[row_idx,col_idx]).replace(",",".")
                 new_main_window()
         elif re.search("::-EXPORT-",event):
+            array = my_data.astype(numpy.dtypes.StringDType)
+            for key_name in Layouter.images:
+                array[:,Layouter.key_list.index(key_name)] = my_images[:,Layouter.key_list.index(key_name)]
             if re.search("-ALL-", event): 
-                new_data = my_data
+                new_data = array
             elif re.search("-SELECT-", event): 
                 new_data = table_data
             elif re.search("-SINGLE-", event): 
-                new_data = my_data[[0,get_IDX()]]
+                new_data = array[[0,get_IDX()]]
             else: 
-                new_data = my_data 
+                new_data = array 
 
             new_data = new_data.tolist()
 
@@ -748,6 +782,7 @@ try:
 
         elif event[0] == "TABLE" and event[1] == "+EDITED+" and not GLOBAL_EMPTY_OVERRIDE:
             update_hashes()
+            FLAG_MY_DATA_CHANGED = FLAG_TABLE_DATA_CHANGED = True
             my_data[convert_to_IDX(event[2][0] + 1), event[2][1]] = window["TABLE"].Values[event[2][0]][event[2][1]]
             table_data[get_IDX(), event[2][1]] = window["TABLE"].Values[event[2][0]][event[2][1]]
             load_book(get_IDX())
@@ -814,7 +849,7 @@ try:
             if not ((key_name in Layouter.key_list or key_name in Layouter.combo_elements) and window["-EDITABLE?-"].get()):
                 try:
                     index_first = str(window[key_name].Widget.index("insert"))
-                    print(index_first)
+                    if DEBUG: print(index_first)
                     index_first = index_first.split(".")
                     org_text = str(window[key_name].get()).splitlines(keepends=True)
                     if len(org_text)==0: org_text = [""]
@@ -949,12 +984,14 @@ try:
                     if DEBUG: print(auto_window["AUTOBOX"].metadata, len(auto_window["AUTOBOX"].Values) - 1)
                 except NameError:
                     pass
-
+        elif event in Layouter.search_key_list:
+            search()
 
         elif event == "-NEW-" and not GLOBAL_SEARCH:
             lock_input(False)
             window[Layouter.key_list[1]].set_focus()
             window["-EDITABLE?-"].update(value=False)
+            FLAG_MY_DATA_CHANGED = FLAG_TABLE_DATA_CHANGED = True
             my_data = numpy.append(my_data, numpy.zeros(shape=[1, my_data.shape[1]], dtype=str), 0)
             my_data[-1, 0] = len(my_data[:]) - 1
             table_data = my_data
@@ -983,14 +1020,6 @@ try:
         elif event == "-TAB-":
             if values["-TAB-"] == "ANALYSE":
                 update_analysis()
-
-            elif values["-TAB-"] == "STANDORTE":
-                if Layouter.treat_as_pos != None:
-                    if hash(my_data[1:, Layouter.treat_as_pos].data.tobytes()) != hash_val_STANDORT:
-                        hash_val_STANDORT = hash(my_data[1:, Layouter.treat_as_pos].data.tobytes())
-                        if layouter.key_counter != 0:
-                            window[get_key("ALL_STANDORTE")].update(visible=False)
-                        window.extend_layout(window["STANDORTE"], layouter.make_layout_standort(my_data[1:, Layouter.treat_as_pos].tolist()))
 
         elif re.search("GETSTANDORT", event):
             if prev_button != None: window[prev_button].update(disabled=False)
@@ -1037,6 +1066,14 @@ try:
             windowINFO = sg.Window(lang.BIBLIA_APP_INFO, layoutINFO, font=FONT, finalize=True, icon=ICON)
             windowINFO.read()
             windowINFO.close()
+        elif event == "Pillow::COPYRIGHT":
+            f = open(files.resource_path("./copyright/copyright_pillow"), encoding="utf-8")
+            sgfxd = f.readlines()
+            text = "".join(sgfxd)
+            layoutINFO = [[sg.Multiline(text, justification="center", auto_size_text=True, size=(50, 20), disabled=True)]]
+            windowINFO = sg.Window(lang.BIBLIA_APP_INFO, layoutINFO, font=FONT, finalize=True, icon=ICON)
+            windowINFO.read()
+            windowINFO.close()
         elif event == "NumPy::COPYRIGHT":
             f = open(files.resource_path("./copyright/copyright_numpy"), encoding="utf-8")
             sgfxd = f.readlines()
@@ -1063,6 +1100,26 @@ try:
             elif re.search("SEARCH", name):
                 search()
 
+        elif re.search(" ADD IMAGE",event):
+            key_name = event.removesuffix(" ADD IMAGE")
+            filetypes = [(lang.IMAGE_FILETYPES, ".*")]
+            init_dir = files.resource_path("./")
+            file_name = dialog_open(filetypes,init_dir)
+            
+            if file_name:
+                string = files.to64(file_name)
+
+                my_images[get_IDX(),Layouter.key_list.index(key_name)] = string
+                my_data[get_IDX(),Layouter.key_list.index(key_name)] = "True"
+                FLAG_MY_DATA_CHANGED = FLAG_TABLE_DATA_CHANGED = True
+                load_book(get_IDX())
+        elif re.search(" CLEAR IMAGE",event):
+            key_name = event.removesuffix(" CLEAR IMAGE")
+            my_images[get_IDX(),Layouter.key_list.index(key_name)] = ""
+            my_data[get_IDX(),Layouter.key_list.index(key_name)] = ""
+            FLAG_MY_DATA_CHANGED = FLAG_TABLE_DATA_CHANGED = True
+            load_book(get_IDX())
+
         elif event == "-EINTRAG_LÖSCHEN-":
             layoutCaution = [
                 [sg.Text(lang.BIBLIA_APP_YOU_WANNA_REALY_DELETE, justification="center", auto_size_text=True)],
@@ -1071,6 +1128,7 @@ try:
             windowCaution = sg.Window(lang.BIBLIA_APP_CONFIRM_DELETE, layoutCaution, font=FONT, finalize=True, icon=ICON)
             eventC, ValuesC = windowCaution.read()
             if eventC == "-DELETE-":
+                FLAG_MY_DATA_CHANGED = True
                 my_data = numpy.delete(my_data, get_IDX(), 0)
                 my_data = files.re_index(my_data)
                 search()
@@ -1101,6 +1159,7 @@ try:
                 windowCaution2 = sg.Window(lang.BIBLIA_APP_CONFIRM_DELETE, layoutCaution2, font=FONT, finalize=True, icon=ICON)
                 eventC2, ValuesC2 = windowCaution2.read()
                 if eventC2 == "-DELETE_FR-":
+                    FLAG_MY_DATA_CHANGED = FLAG_TABLE_DATA_CHANGED = True
                     for element in reversed(table_data[1:, 0].tolist()):
                         my_data = numpy.delete(my_data, int(element), 0)
                     windowCaution2.close()

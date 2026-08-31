@@ -89,6 +89,7 @@ class Layout:
         self.search_buttons = []
 
         self.combo_elements = []
+        self.images = []
         self.search_normal = []
 
         self.combo_elements_search = []
@@ -98,7 +99,7 @@ class Layout:
 
         for key in table_header:
             key_name = re.sub("[^0-9a-zA-Z]", "",key)
-            key_name = "-"+key_name.upper()+"-"
+            key_name = "-"+key_name.lower()+"-"
             self.key_list.append(key_name)
             self.search_key_list.append("SEARCH"+key_name)
             self.search_buttons.append("!CLEARSEARCH"+key_name)
@@ -120,6 +121,8 @@ class Layout:
             elif displ=="short":
                 self.combo_elements.append(key_name)
                 self.combo_elements_search.append("SEARCH"+key_name)
+            elif displ=="image":
+                self.images.append(key_name)
 
             if convert_text_bool(self.meta_data_raw[2,idx]):
                 self.skip_math.append(idx)
@@ -145,6 +148,7 @@ class Layout:
         layout_right_column_l = []
         layout_right_column_r_search = []
         layout_right_column_l_search = []
+        layout_right_column_center = []
 
         for head in self.meta_data_raw[0].tolist():
             key_idx=self.meta_data_dict[head]
@@ -173,10 +177,22 @@ class Layout:
 
                 layout_right_column_r.append([sg.Input([],key=self.key_list[key_idx],right_click_menu=make_right_click_menu(self.key_list[key_idx]),use_readonly_for_disable=True,disabled_readonly_background_color=THIRD_COLOR(sg.theme()),metadata=0,enable_events=True,size=(10,1),pad=(0,10),expand_x=True)])
                 layout_right_column_r_search.append([sg.Input(key=self.search_key_list[key_idx],right_click_menu=make_right_click_menu(self.search_key_list[key_idx]),use_readonly_for_disable=True,disabled_readonly_background_color=THIRD_COLOR(sg.theme()),size=(10,1),pad=(0,10),enable_events=True,expand_x=True,tooltip=lang.LAYOUTER_TOOLTIP_SEARCH_SUBSTRING0+head+lang.LAYOUTER_TOOLTIP_SEARCH_SUBSTRING2),sg.Button("X",key="!CLEAR"+self.search_key_list[key_idx],border_width=0,button_color=(OTHER_BUTTON(sg.theme()),sg.theme_background_color()),pad=0,auto_size_button=False,size=(1,1),tooltip=lang.LAYOUTER_CLEAR)])
+            elif self.display_length[key_idx]=="image":
+                layout_right_column_center.append([
+                    sg.Frame(
+                        head_name,
+                        [
+                            [sg.Image(expand_x=True,key=self.key_list[key_idx],expand_y=True,data=ICON,subsample=1,pad=0)],
+                            [sg.Column([[sg.Button(lang.ADD_IMAGE, key=self.key_list[key_idx]+" ADD IMAGE"),sg.Button(lang.CLEAR_IMAGE, key=self.key_list[key_idx]+" CLEAR IMAGE")]],expand_x=True,vertical_alignment="bottom",element_justification="center")]
+                        ],
+                        expand_x=True,title_location=sg.TITLE_LOCATION_TOP,border_width=7,relief=sg.RELIEF_RIDGE,pad=5,size=(50, 50),expand_y=True)])
+
+                layout_right_column_l_search.append([sg.Text(head_name,size=(15,1),pad=(0,10))])
+                layout_right_column_r_search.append([sg.Input(key=self.search_key_list[key_idx],right_click_menu=make_right_click_menu(self.search_key_list[key_idx]),use_readonly_for_disable=True,disabled_readonly_background_color=THIRD_COLOR(sg.theme()),size=(10,1),pad=(0,10),enable_events=True,expand_x=True,tooltip=lang.LAYOUTER_TOOLTIP_SEARCH_SUBSTRING0+head+lang.LAYOUTER_TOOLTIP_SEARCH_SUBSTRING2),sg.Button("X",key="!CLEAR"+self.search_key_list[key_idx],border_width=0,button_color=(OTHER_BUTTON(sg.theme()),sg.theme_background_color()),pad=0,auto_size_button=False,size=(1,1),tooltip=lang.LAYOUTER_CLEAR)])
 
         layout_right_column = sg.Column([[
                 sg.Column(layout_right_column_l,expand_x=True),  
-                sg.Column(layout_right_column_r,expand_x=True)]],expand_y=True,pad=(0,0),element_justification="left",expand_x=True)
+                sg.Column(layout_right_column_r,expand_x=True)],[sg.Column(layout_right_column_center,expand_x=True,expand_y=True)]],expand_y=True,pad=(0,0),element_justification="left",expand_x=True)
         layout_right_column_search = sg.Column([[
                             sg.Column(layout_right_column_l_search,expand_x=True),  
                             sg.Column(layout_right_column_r_search,expand_x=True)]],expand_y=True,pad=(0,0),element_justification="left",expand_x=True)

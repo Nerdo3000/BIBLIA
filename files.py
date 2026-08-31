@@ -20,6 +20,9 @@ import os
 import sys
 import csv
 from style import *
+import PIL.Image
+import io
+import base64
 
 csv.register_dialect("excel-german",csv.excel,delimiter=";")
 
@@ -49,13 +52,17 @@ def index(my_data):
     else:
         return re_index(my_data)
 
-def import_csv(path,encoding="utf-8",dialect="unix",failsafe=[["Nr","Titel"],[1,"KEINE DATEN GELADEN"]]):
+def import_csv(path,encoding="utf-8",dialect="unix",failsafe=[["Nr","Titel"],[1,"KEINE DATEN GELADEN"]],extract=None):
     if DEBUG: print(path)
     try:
         with open(path,"r",encoding=encoding,newline='') as file:
             reader = csv.reader(file, dialect=dialect)
             n = numpy.array(list(reader),dtype="str")
         if n.shape[0]<2 or n.shape[1]<2: return numpy.array(failsafe)
+        if extract==None: 
+            n = numpy.array([["Value to large" if len(cell)>200 else cell for cell in row] for row in n])
+        else:
+            n = n[:,extract]
         return n
     except FileNotFoundError:
         return numpy.array(failsafe)
@@ -74,3 +81,42 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 def file_exists(path): return os.path.isfile(path)
+
+def from64(string):
+    try:
+        img = PIL.Image.open(io.BytesIO(base64.b64decode(string.encode('UTF-8'))))
+
+        bio = io.BytesIO()
+        img.save(bio, format="PNG")
+        del img
+        return bio.getvalue()
+    except (PIL.UnidentifiedImageError,OSError) as e:
+        if DEBUG: print(e)
+        return None
+
+def to64(file_name):
+    img = PIL.Image.open(file_name)
+    
+    img = img.resize((int(img.size[0]*512/img.size[1]), 512))
+    bio = io.BytesIO()
+    img.save(bio, 'webp', optimize = True, quality = 50)
+    del img
+    return base64.b64encode(bio.getvalue())
+
+def resize_image(image, resize=None):
+    if image==None: return None
+    try:
+        img = PIL.Image.open(io.BytesIO(base64.b64decode(image)))
+    except Exception as e:
+        data_bytes_io = io.BytesIO(image)
+        img = PIL.Image.open(data_bytes_io)
+
+    if resize:
+        scale = min(resize[1]/img.size[1], resize[0]/img.size[0])
+        try:
+            img = img.resize((int(img.size[0]*scale), int(img.size[1]*scale)), resample=PIL.Image.LANCZOS)
+        except ValueError: return None
+    bio = io.BytesIO()
+    img.save(bio, format="PNG")
+    del img
+    return bio.getvalue()
