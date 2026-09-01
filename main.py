@@ -827,6 +827,7 @@ try:
                         new_str = "".join(org_text)
                         window[key_name].update(new_str)
                         window[key_name].Widget.mark_set("insert", ".".join(index_first))
+                        write_book_key(get_IDX(),key_name)
                     else: #i have no fucking clue
                         pass
                 except sg.tk.TclError:
@@ -865,6 +866,7 @@ try:
                         window[key_name].Widget.mark_set("insert", ".".join(index_first))
                     else: #i have no fucking clue
                         pass
+                    write_book_key(get_IDX(),key_name)
                 except sg.tk.TclError:
                     pass
 
