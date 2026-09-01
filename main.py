@@ -290,7 +290,10 @@ try:
     def write_book_key(idx, key):
         global my_data, FLAG_MY_DATA_CHANGED, FLAG_TABLE_DATA_CHANGED
         FLAG_MY_DATA_CHANGED = True
-        my_data[idx, Layouter.key_list.index(key)] = str(window[key].get()).replace("\n", "|")
+        try:
+            my_data[idx, Layouter.key_list.index(key)] = str(window[key].get()).replace("\n", "|")
+        except ValueError:
+            if DEBUG: print("Could not write to key: "+key)
 
     def get_key(string):
         return string + str(layouter.key_counter)
@@ -827,7 +830,7 @@ try:
                         new_str = "".join(org_text)
                         window[key_name].update(new_str)
                         window[key_name].Widget.mark_set("insert", ".".join(index_first))
-                        write_book_key(get_IDX(),key_name)
+                        write_book_key(get_IDX(),key_name.removesuffix("ADD_ENTRY"))
                     else: #i have no fucking clue
                         pass
                 except sg.tk.TclError:
@@ -866,7 +869,7 @@ try:
                         window[key_name].Widget.mark_set("insert", ".".join(index_first))
                     else: #i have no fucking clue
                         pass
-                    write_book_key(get_IDX(),key_name)
+                    write_book_key(get_IDX(),key_name.removesuffix("ADD_ENTRY"))
                 except sg.tk.TclError:
                     pass
 
@@ -996,7 +999,8 @@ try:
             window[Layouter.key_list[1]].set_focus()
             window["-EDITABLE?-"].update(value=False)
             FLAG_MY_DATA_CHANGED = FLAG_TABLE_DATA_CHANGED = True
-            my_data = numpy.append(my_data, numpy.zeros(shape=[1, my_data.shape[1]], dtype=str), 0)
+            my_data = numpy.append(my_data, numpy.zeros(shape=(1,my_data.shape[1]), dtype=numpy.dtypes.StringDType), 0)
+            my_images = numpy.append(my_images, numpy.zeros(shape=(1,my_data.shape[1]), dtype=numpy.dtypes.StringDType), 0)
             my_data[-1, 0] = len(my_data[:]) - 1
             table_data = my_data
             set_IDX(data_len())
@@ -1134,6 +1138,7 @@ try:
             if eventC == "-DELETE-":
                 FLAG_MY_DATA_CHANGED = True
                 my_data = numpy.delete(my_data, get_IDX(), 0)
+                my_images = numpy.delete(my_images, get_IDX(), 0)
                 my_data = files.re_index(my_data)
                 search()
                 windowCaution.close()
@@ -1166,6 +1171,7 @@ try:
                     FLAG_MY_DATA_CHANGED = FLAG_TABLE_DATA_CHANGED = True
                     for element in reversed(table_data[1:, 0].tolist()):
                         my_data = numpy.delete(my_data, int(element), 0)
+                        my_images = numpy.delete(my_images, int(element), 0)
                     windowCaution2.close()
                     windowCaution.close()
                     my_data = files.re_index(my_data)
