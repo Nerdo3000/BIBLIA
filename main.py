@@ -1026,14 +1026,14 @@ try:
             button_name = str(event).removeprefix("GETSTANDORT---")
             if DEBUG: print("Last:" + button_name[: int(button_name.rindex("-")) + 1])
             button_name = button_name[: int(button_name.rindex("-")) + 1].removesuffix("---")
-            window["SEARCH-STANDORT-"].update(button_name)
+            window[Layouter.search_key_list[Layouter.treat_as_pos]].update(button_name)
             search()
             prev_button = event
             window[event].update(disabled=True)
         elif event == "-ALL_STANDORTE-":
             if prev_button != None: window[prev_button].update(disabled=False)
             prev_button = None
-            window["SEARCH-STANDORT-"].update("")
+            window[Layouter.search_key_list[Layouter.treat_as_pos]].update("")
             search()
         elif event == "-BIGSMALL?-":
             search()
