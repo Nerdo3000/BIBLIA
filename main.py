@@ -268,7 +268,10 @@ try:
     def load_book(idx):
         if GLOBAL_EMPTY_OVERRIDE:
             for key_name in Layouter.key_list[1:]:
-                window[key_name].update(lang.NO_DATA_FOUND)
+                if key_name in Layouter.images:
+                    window[key_name].update(ICON)
+                else:
+                    window[key_name].update(lang.NO_DATA_FOUND)
         else:
             try:
                 for i in range(1, len(Layouter.key_list)):
@@ -781,7 +784,6 @@ try:
                 if DEBUG: print(e)
 
         elif event[0] == "TABLE" and event[1] == "+EDITED+" and not GLOBAL_EMPTY_OVERRIDE:
-            update_hashes()
             FLAG_MY_DATA_CHANGED = FLAG_TABLE_DATA_CHANGED = True
             my_data[convert_to_IDX(event[2][0] + 1), event[2][1]] = window["TABLE"].Values[event[2][0]][event[2][1]]
             table_data[get_IDX(), event[2][1]] = window["TABLE"].Values[event[2][0]][event[2][1]]
@@ -789,8 +791,7 @@ try:
 
         elif event in Layouter.key_list:
             write_book_key(get_IDX(), event)
-            update_hashes()
-        
+
         elif re.search(lang.MENU_RIGHT_CLICK_CUT+"::",event):
             key_name = event.replace(lang.MENU_RIGHT_CLICK_CUT+"::", "")
             try:
@@ -1033,7 +1034,7 @@ try:
         elif event == "-ALL_STANDORTE-":
             if prev_button != None: window[prev_button].update(disabled=False)
             prev_button = None
-            window[Layouter.search_key_list[Layouter.treat_as_pos]].update("")
+            window[Layouter.search_fkey_list[Layouter.treat_as_pos]].update("")
             search()
         elif event == "-BIGSMALL?-":
             search()
