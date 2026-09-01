@@ -197,7 +197,7 @@ class Layout:
                             sg.Column(layout_right_column_l_search,expand_x=True),  
                             sg.Column(layout_right_column_r_search,expand_x=True)]],expand_y=True,pad=(0,0),element_justification="left",expand_x=True)
 
-        layout_left_column = sg.Column(layout_left_column,expand_y=True,pad=(50,0),element_justification="left",expand_x=True)
+        layout_left_column = sg.Column(layout_left_column,expand_y=True,pad=(50,(0,20)),element_justification="left",expand_x=True)
         layout_left_column_search = sg.Column(layout_left_column_search,expand_y=True,pad=(50,0),element_justification="left",expand_x=True)
 
         self.layout_left_column = layout_left_column

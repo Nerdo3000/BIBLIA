@@ -400,6 +400,7 @@ try:
 
         my_images = numpy.empty_like(my_data,dtype=numpy.dtypes.StringDType)
         for key in Layouter.images:
+            my_data[:,Layouter.key_list.index(key)] = ["Value to large" if len(row[Layouter.key_list.index(key)])>200 else row[Layouter.key_list.index(key)] for row in my_data]
             my_images[:,Layouter.key_list.index(key)] = files.import_csv(GLOBAL_SAVE_FILE,failsafe=[""]*data_len(),extract=Layouter.key_list.index(key)-1)
 
         layout_left_column, layout_left_column_search, layout_right_column, layout_right_column_search = Layouter.make_layouts()

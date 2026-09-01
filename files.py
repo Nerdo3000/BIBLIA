@@ -57,11 +57,9 @@ def import_csv(path,encoding="utf-8",dialect="unix",failsafe=[["Nr","Titel"],[1,
     try:
         with open(path,"r",encoding=encoding,newline='') as file:
             reader = csv.reader(file, dialect=dialect)
-            n = numpy.array(list(reader),dtype="str")
+            n = numpy.array(list(reader),dtype=numpy.dtypes.StringDType)
         if n.shape[0]<2 or n.shape[1]<2: return numpy.array(failsafe)
-        if extract==None: 
-            n = numpy.array([["Value to large" if len(cell)>200 else cell for cell in row] for row in n])
-        else:
+        if extract!=None: 
             n = n[:,extract]
         return n
     except FileNotFoundError:
