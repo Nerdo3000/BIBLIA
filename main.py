@@ -65,7 +65,6 @@ try:
             return 1
 
     def set_IDX(n):
-        close_auto_box()
         if n < 1:
             n = 1
         if n > data_len():
@@ -375,8 +374,10 @@ try:
         if FLAG_TABLE_DATA_CHANGED:
             FLAG_TABLE_DATA_CHANGED = False
             profiler.profiling_end("Before TABLE")
-            window["TABLE"].update(select_rows=[get_IDX_input()-1])
-            window["TABLE"].update(table_data[1:].tolist())
+            try:
+                window["TABLE"].update(select_rows=[get_IDX_input()-1])
+                window["TABLE"].update(table_data[1:].tolist())
+            except Exception: pass
             window.read(0)
             calc_analysis()
 
@@ -597,7 +598,7 @@ try:
     file_name = False
     loop_con = False
     filetypes = [("Comma-separated values", ".csv")]
-    init_dir = files.resource_path("./")
+    init_dir = "./"
     file_name = dialog_open(filetypes,init_dir)
 
     if file_name:
@@ -675,7 +676,7 @@ try:
             close_auto_box()
         elif event == lang.MENU_OPEN:
             filetypes = [("Comma-separated values", ".csv")]
-            init_dir = files.resource_path("./")
+            init_dir = "./"
             file_name = dialog_open(filetypes,init_dir)
 
             if file_name:
@@ -690,7 +691,7 @@ try:
                 export_main(my_data, name=GLOBAL_SAVE_FILE)
         elif event == lang.MENU_SAVE_AS:
             filetypes = [("Comma-separated values", ".csv")]
-            init_dir = files.resource_path("./")
+            init_dir = GLOBAL_SAVE_FILE
             default_extension = ".csv"
             file_name = dialog_save(filetypes,init_dir,default_extension)
             
@@ -698,7 +699,7 @@ try:
                 export_main(my_data, name=file_name)
         elif event==lang.MENU_IMPORT_EXCEL:
             filetypes = [("Comma-separated values", ".csv")]
-            init_dir = files.resource_path("./")
+            init_dir = "./"
             file_name = dialog_open(filetypes,init_dir)
             
             if file_name:
@@ -709,7 +710,7 @@ try:
                 new_main_window()
         elif event==lang.MENU_IMPORT_EXCEL_GERMAN:
             filetypes = [("Comma-separated values", ".csv")]
-            init_dir = files.resource_path("./")
+            init_dir = "./"
             file_name = dialog_open(filetypes,init_dir)
                     
             if file_name:
@@ -767,7 +768,7 @@ try:
             else: continue
 
             default_name = GLOBAL_SAVE_FILE.split("/")[-1].removesuffix(".csv")+"_export"+default_extension
-            init_dir = files.resource_path("./")
+            init_dir = GLOBAL_SAVE_FILE
             file_name = dialog_save(filetypes,init_dir,default_extension,default_name)
 
             if file_name:  
@@ -797,85 +798,94 @@ try:
             write_book_key(get_IDX(), event)
 
         elif re.search(lang.MENU_RIGHT_CLICK_CUT+"::",event):
-            key_name = event.replace(lang.MENU_RIGHT_CLICK_CUT+"::", "")
             try:
+                key_name = event.replace(lang.MENU_RIGHT_CLICK_CUT+"::", "")
                 try:
-                    if window[key_name].Widget.selection_present():
+                    try:
+                        if window[key_name].Widget.selection_present():
+                            selected_text = window[key_name].Widget.selection_get()
+                        else:
+                            selected_text = ""
+                    except AttributeError:
                         selected_text = window[key_name].Widget.selection_get()
-                    else:
-                        selected_text = ""
-                except AttributeError:
-                    selected_text = window[key_name].Widget.selection_get()
-            except sg.tk.TclError:
-                selected_text = ""
-            sg.clipboard_set(selected_text)
-            if DEBUG: print("Cut: "+selected_text)
-            if not ((key_name in Layouter.key_list or key_name in Layouter.combo_elements) and window["-EDITABLE?-"].get()):
-                try:
-                    index_first = str(window[key_name].Widget.index("sel.first"))
-                    index_last = str(window[key_name].Widget.index("sel.last"))
-                    index_first = index_first.split(".")
-                    index_last = index_last.split(".")
-                    org_text = str(window[key_name].get()).splitlines(keepends=True)
-                    if len(org_text)==0: org_text = [""]
-                    if len(index_first)==1: #simple input element
-                        new_str = org_text[0][:int(index_first[0])] + org_text[0][int(index_last[0]):] 
-                        window[key_name].update(new_str,move_cursor_to=int(index_first[0]),select=False)
-                    elif len(index_first)==2: #text multiline
-                        if index_first[0]!=index_last[0]: #different lines
-                            org_text[int(index_first[0])-1] = org_text[int(index_first[0])-1][:int(index_first[1])]
-                            org_text[int(index_last[0])-1] = org_text[int(index_last[0])-1][int(index_last[1]):]
-                        else: #same line
-                            org_text[int(index_first[0])-1]=org_text[int(index_first[0])-1][:int(index_first[1])] + org_text[int(index_first[0])-1][int(index_last[1]):]
-                        new_str = "".join(org_text)
-                        window[key_name].update(new_str)
-                        window[key_name].Widget.mark_set("insert", ".".join(index_first))
-                        write_book_key(get_IDX(),key_name.removesuffix("ADD_ENTRY"))
-                    else: #i have no fucking clue
-                        pass
                 except sg.tk.TclError:
-                    pass
+                    selected_text = ""
+                sg.clipboard_set(selected_text)
+                if DEBUG: print("Cut: "+selected_text)
+                if not ((key_name in Layouter.key_list or key_name in Layouter.combo_elements) and window["-EDITABLE?-"].get()):
+                    try:
+                        index_first = str(window[key_name].Widget.index("sel.first"))
+                        index_last = str(window[key_name].Widget.index("sel.last"))
+                        index_first = index_first.split(".")
+                        index_last = index_last.split(".")
+                        org_text = str(window[key_name].get()).splitlines(keepends=True)
+                        if len(org_text)==0: org_text = [""]
+                        if len(index_first)==1: #simple input element
+                            new_str = org_text[0][:int(index_first[0])] + org_text[0][int(index_last[0]):] 
+                            window[key_name].update(new_str,move_cursor_to=int(index_first[0]),select=False)
+                        elif len(index_first)==2: #text multiline
+                            if index_first[0]!=index_last[0]: #different lines
+                                org_text[int(index_first[0])-1] = org_text[int(index_first[0])-1][:int(index_first[1])]
+                                org_text[int(index_last[0])-1] = org_text[int(index_last[0])-1][int(index_last[1]):]
+                            else: #same line
+                                org_text[int(index_first[0])-1]=org_text[int(index_first[0])-1][:int(index_first[1])] + org_text[int(index_first[0])-1][int(index_last[1]):]
+                            new_str = "".join(org_text)
+                            window[key_name].update(new_str)
+                            window[key_name].Widget.mark_set("insert", ".".join(index_first))
+                            write_book_key(get_IDX(),key_name.removesuffix("ADD_ENTRY"))
+                        else: #i have no fucking clue
+                            pass
+                    except sg.tk.TclError:
+                        pass
+            except Exception as e:
+                pass #Lets just sweep this under the carpet
         elif re.search(lang.MENU_RIGHT_CLICK_COPY+"::",event):
-            key_name = event.replace(lang.MENU_RIGHT_CLICK_COPY+"::", "")
             try:
+                key_name = event.replace(lang.MENU_RIGHT_CLICK_COPY+"::", "")
                 try:
-                    if window[key_name].Widget.selection_present():
+                    try:
+                        if window[key_name].Widget.selection_present():
+                            selected_text = window[key_name].Widget.selection_get()
+                        else:
+                            selected_text = ""
+                    except AttributeError:
                         selected_text = window[key_name].Widget.selection_get()
-                    else:
-                        selected_text = ""
-                except AttributeError:
-                    selected_text = window[key_name].Widget.selection_get()
-            except sg.tk.TclError:
-                selected_text = ""
-            sg.clipboard_set(selected_text)
-            if DEBUG: print("Copy: "+selected_text)
-        elif re.search(lang.MENU_RIGHT_CLICK_PASTE+"::",event):
-            if DEBUG: print("Paste: "+sg.clipboard_get())
-            key_name = event.replace(lang.MENU_RIGHT_CLICK_PASTE+"::", "")
-            if not ((key_name in Layouter.key_list or key_name in Layouter.combo_elements) and window["-EDITABLE?-"].get()):
-                try:
-                    index_first = str(window[key_name].Widget.index("insert"))
-                    if DEBUG: print(index_first)
-                    index_first = index_first.split(".")
-                    org_text = str(window[key_name].get()).splitlines(keepends=True)
-                    if len(org_text)==0: org_text = [""]
-                    if len(index_first)==1: #simple input element
-                        new_str = org_text[0][:int(index_first[0])] + sg.clipboard_get() + org_text[0][int(index_first[0]):]
-                        window[key_name].update(new_str,move_cursor_to=int(index_first[0]),select=False)
-                    elif len(index_first)==2: #text multiline
-                        org_text[int(index_first[0])-1]=org_text[int(index_first[0])-1][:int(index_first[1])] + sg.clipboard_get() + org_text[int(index_first[0])-1][int(index_first[1]):]
-                        new_str = "".join(org_text)
-                        window[key_name].update(new_str)
-                        window[key_name].Widget.mark_set("insert", ".".join(index_first))
-                    else: #i have no fucking clue
-                        pass
-                    write_book_key(get_IDX(),key_name.removesuffix("ADD_ENTRY"))
                 except sg.tk.TclError:
-                    pass
+                    selected_text = ""
+                sg.clipboard_set(selected_text)
+                if DEBUG: print("Copy: "+selected_text)
+            except Exception as e:
+                pass
+        elif re.search(lang.MENU_RIGHT_CLICK_PASTE+"::",event):
+            try:
+                if DEBUG: print("Paste: "+sg.clipboard_get())
+                key_name = event.replace(lang.MENU_RIGHT_CLICK_PASTE+"::", "")
+                if not ((key_name in Layouter.key_list or key_name in Layouter.combo_elements) and window["-EDITABLE?-"].get()):
+                    try:
+                        index_first = str(window[key_name].Widget.index("insert"))
+                        if DEBUG: print(index_first)
+                        index_first = index_first.split(".")
+                        org_text = str(window[key_name].get()).splitlines(keepends=True)
+                        if len(org_text)==0: org_text = [""]
+                        if len(index_first)==1: #simple input element
+                            new_str = org_text[0][:int(index_first[0])] + sg.clipboard_get() + org_text[0][int(index_first[0]):]
+                            window[key_name].update(new_str,move_cursor_to=int(index_first[0]),select=False)
+                        elif len(index_first)==2: #text multiline
+                            org_text[int(index_first[0])-1]=org_text[int(index_first[0])-1][:int(index_first[1])] + sg.clipboard_get() + org_text[int(index_first[0])-1][int(index_first[1]):]
+                            new_str = "".join(org_text)
+                            window[key_name].update(new_str)
+                            window[key_name].Widget.mark_set("insert", ".".join(index_first))
+                        else: #i have no fucking clue
+                            pass
+                        write_book_key(get_IDX(),key_name.removesuffix("ADD_ENTRY"))
+                    except sg.tk.TclError:
+                        pass
+            except Exception as e:
+                pass
 
 
         elif re.search(" AUTO_COMBO ", event):
-            if not re.search("SEARCH",event) and window["-EDITABLE?-"].get(): close_auto_box(); continue
+            if (not re.search("SEARCH",event)) and window["-EDITABLE?-"].get(): close_auto_box(); continue
             key = event.replace(" AUTO_COMBO ", "")
             if re.search("KEY_PRESS",key):
                 key_name = key.removesuffix("KEY_PRESS")
@@ -891,23 +901,29 @@ try:
                 if key_name in Layouter.combo_elements_search or key_name in Layouter.combo_elements:
                     current = str(window[key_name].get()).lower()
                     new_list = my_data[1:, i].tolist()
+                    new_list = set(new_list)
                     set_list = []
-                    new_list.pop(get_IDX() - 1)
+                    search_val = remove_regex(current)
                     for n in new_list:
-                        for t in str(n).split("|"):
-                            set_list.append(t)
+                        if "|" in n:
+                            for t in str(n).split("|"):
+                                try:
+                                    if re.search(search_val, str(t).lower()):
+                                        set_list.append(t)
+                                except re.PatternError:
+                                    if DEBUG: print(search_val)
+                        else:
+                            try:
+                                if re.search(search_val, str(n).lower()):
+                                    set_list.append(n)
+                            except re.PatternError:
+                                if DEBUG: print(search_val)
                     set_list = list(set(set_list))
                     set_list.sort()
-                    new_list = []
-                
-                    for val in set_list:
-                        try:
-                            if re.search(remove_regex(current), str(val).lower()):
-                                new_list.append(val)
-                        except re.PatternError:
-                            if DEBUG: print(remove_regex(current))
-                    if not str(window[key_name].get()) in new_list:
-                        new_list.insert(0, str(window[key_name].get()))
+
+                    try: set_list.remove(str(window[key_name].get()))
+                    except ValueError: pass
+                    set_list.insert(0, str(window[key_name].get()))
 
                 if key_name in Layouter.combo_elements:
                     write_book_key(get_IDX(),key_name.removesuffix("ADD_ENTRY"))
@@ -915,7 +931,7 @@ try:
                     search()
                 try:
                     if auto_window.is_closed():
-                        auto_window_layout = [[sg.Listbox(values=new_list, expand_x=True, expand_y=True, pad=0,key="AUTOBOX")]]
+                        auto_window_layout = [[sg.Listbox(values=set_list, expand_x=True, expand_y=True, pad=0,key="AUTOBOX")]]
                         x = window[key_name].Widget.winfo_rootx()
                         y = window[key_name].Widget.winfo_rooty() + window[key_name].get_size()[1]
                         auto_window = sg.Window(
@@ -923,10 +939,11 @@ try:
                         )
                         auto_window.bind("<Button-1>", key_name+" AUTO_COMBO ENTER")
                     else:
-                        auto_window["AUTOBOX"].update(values=new_list)
+                        auto_window["AUTOBOX"].update(values=set_list)
                     auto_window["AUTOBOX"].metadata = -1
-                except NameError:
-                    auto_window_layout = [[sg.Listbox(values=new_list, expand_x=True, expand_y=True, pad=0,key="AUTOBOX")]]
+                except NameError as e:
+                    print(e)
+                    auto_window_layout = [[sg.Listbox(values=set_list, expand_x=True, expand_y=True, pad=0,key="AUTOBOX")]]
                     x = window[key_name].Widget.winfo_rootx()
                     y = window[key_name].Widget.winfo_rooty() + window[key_name].get_size()[1]
                     auto_window = sg.Window(
@@ -1041,7 +1058,7 @@ try:
         elif event == "-ALL_STANDORTE-":
             if prev_button != None: window[prev_button].update(disabled=False)
             prev_button = None
-            window[Layouter.search_fkey_list[Layouter.treat_as_pos]].update("")
+            window[Layouter.search_key_list[Layouter.treat_as_pos]].update("")
             search()
         elif event == "-BIGSMALL?-":
             search()
@@ -1111,7 +1128,7 @@ try:
         elif re.search(" ADD IMAGE",event):
             key_name = event.removesuffix(" ADD IMAGE")
             filetypes = [(lang.IMAGE_FILETYPES, ".*")]
-            init_dir = files.resource_path("./")
+            init_dir = "./"
             file_name = dialog_open(filetypes,init_dir)
             
             if file_name:

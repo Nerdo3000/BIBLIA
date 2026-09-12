@@ -212,6 +212,8 @@ class Layout:
             window[key].bind("<Key-Down>"," AUTO_COMBO SELECT_DOWN")
             window[key].bind("<Key-Return>"," AUTO_COMBO ENTER")
             window[key].bind("<Key-Up>"," AUTO_COMBO SELECT_UP")
+            window[key].bind("<Key-Shift_L>","")
+            window[key].bind("<Key-Shift_R>","")
         for key in self.combo_elements_search:
             window[key].bind("<Key>", " AUTO_COMBO KEY_PRESS")
             window[key].bind("<Button-1>", " AUTO_COMBO KEY_PRESS")
@@ -219,6 +221,8 @@ class Layout:
             window[key].bind("<Key-Down>"," AUTO_COMBO SELECT_DOWN")
             window[key].bind("<Key-Return>"," AUTO_COMBO ENTER")
             window[key].bind("<Key-Up>"," AUTO_COMBO SELECT_UP")
+            window[key].bind("<Key-Shift_L>","")
+            window[key].bind("<Key-Shift_R>","")
 
 def make_right_click_menu(key_name):
     #sg.clipboard_get
