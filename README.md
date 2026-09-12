@@ -3,6 +3,11 @@ BIBLIA is an application I made for cataloguing and sorting my books, but it can
 
 It features a regex search system, autocompletion, some analysis, a position system (when you want to know where you books are (the syntax for which is "B##H#_". B for book, # are numbers, H for height (in you shelf) and at the end you can put a char for denoting the room you shelf is in. An example would be B01H3L)) and is generally quite lightweight. Just load in a CSV. You can also provide a .meta.csv file, with the same name as you CSV, which contains style information and things like that (an example is provided). The App switches automatically between Englisch and German, as well as light and dark mode, based on system settings.
 
+<img src="./screenshots/screenshot1.png">
+<img src="./screenshots/screenshot2.png">
+<img src="./screenshots/screenshot3.png">
+<img src="./screenshots/screenshot4.png">
+
 It also supports images, which can be embedded. They are stored internally as base64 encoded, fairly low quality webp. This is so that youre file size doesn‘t blow up. With about 20-30 kb per Image, your file size will probably stay in the mb range (unless you have millions of entrys).
 
 The app is built using PySimpleGUI 6, which intern uses tkinter, so you can basically run it anywhere. I have tested it on Linux Ubuntu 24, Windows 10 and 11, Python 3.13.3 and 3.14.6, but I see no reason it shouldn't work in other versions.

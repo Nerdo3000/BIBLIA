@@ -65,10 +65,7 @@ try:
             return 1
 
     def set_IDX(n):
-        if n < 1:
-            n = 1
-        if n > data_len():
-            n = data_len()
+        n = min(max(1,n),data_len())
         window["-IDX-"].update(n)
         try:
             window["TABLE"].update(select_rows=[n - 1])
@@ -377,7 +374,7 @@ try:
             try:
                 window["TABLE"].update(select_rows=[get_IDX_input()-1])
                 window["TABLE"].update(table_data[1:].tolist())
-            except Exception: pass
+            except sg.tkinter.TclError: pass
             window.read(0)
             calc_analysis()
 
@@ -508,7 +505,7 @@ try:
                     lang.MENU_CLOSE,
                 ],
             ],
-            [lang.MENU_ABOUT, ["Copyright::COPY", "Regex::HILFE", lang.MENU_LIBS, ["NumPy::COPYRIGHT", "PySimpleGUI::COPYRIGHT", "Pillow::COPYRIGHT", "darkdetect::COPYRIGHT"]]],
+            [lang.MENU_ABOUT, ["Copyright::COPYRIGHT", "Regex::COPYRIGHT", lang.MENU_LIBS, ["NumPy::COPYRIGHT", "PySimpleGUI::COPYRIGHT", "Pillow::COPYRIGHT", "darkdetect::COPYRIGHT"]]],
         ]
 
         # Define the window's contents
@@ -1067,54 +1064,22 @@ try:
         elif event == "-REGEX?-":
             search()
 
-        elif event == "Copyright::COPY":
-            f = open(files.resource_path("./LICENSE"), encoding="utf-8")
+        elif re.search("::COPYRIGHT",event):
+            if event == "darkdetect::COPYRIGHT":        f = "./copyright/copyright_darkdetect"
+            elif event == "PySimpleGUI::COPYRIGHT":     f = "./copyright/copyright_pysimplegui"
+            elif event == "Pillow::COPYRIGHT":          f = "./copyright/copyright_pillow"
+            elif event == "NumPy::COPYRIGHT":           f = "./copyright/copyright_numpy"
+            elif event == "Regex::COPYRIGHT":           f = lang.BIBLIA_APP_REGEX_FILE_NAME
+            elif event == "Copyright::COPYRIGHT":       f = "./LICENSE"
+            else: continue
+            f = open(files.resource_path(f), encoding="utf-8")
             sgfxd = f.readlines()
             text = "".join(sgfxd)
             layoutINFO = [[sg.Multiline(text, justification="center", auto_size_text=True, size=(50, 20), disabled=True)]]
             windowINFO = sg.Window(lang.BIBLIA_APP_INFO, layoutINFO, font=FONT, finalize=True, icon=ICON)
             windowINFO.read()
             windowINFO.close()
-        elif event == "darkdetect::COPYRIGHT":
-            f = open(files.resource_path("./copyright/copyright_darkdetect"), encoding="utf-8")
-            sgfxd = f.readlines()
-            text = "".join(sgfxd)
-            layoutINFO = [[sg.Multiline(text, justification="center", auto_size_text=True, size=(50, 20), disabled=True)]]
-            windowINFO = sg.Window(lang.BIBLIA_APP_INFO, layoutINFO, font=FONT, finalize=True, icon=ICON)
-            windowINFO.read()
-            windowINFO.close()
-        elif event == "PySimpleGUI::COPYRIGHT":
-            f = open(files.resource_path("./copyright/copyright_pysimplegui"), encoding="utf-8")
-            sgfxd = f.readlines()
-            text = "".join(sgfxd)
-            layoutINFO = [[sg.Multiline(text, justification="center", auto_size_text=True, size=(50, 20), disabled=True)]]
-            windowINFO = sg.Window(lang.BIBLIA_APP_INFO, layoutINFO, font=FONT, finalize=True, icon=ICON)
-            windowINFO.read()
-            windowINFO.close()
-        elif event == "Pillow::COPYRIGHT":
-            f = open(files.resource_path("./copyright/copyright_pillow"), encoding="utf-8")
-            sgfxd = f.readlines()
-            text = "".join(sgfxd)
-            layoutINFO = [[sg.Multiline(text, justification="center", auto_size_text=True, size=(50, 20), disabled=True)]]
-            windowINFO = sg.Window(lang.BIBLIA_APP_INFO, layoutINFO, font=FONT, finalize=True, icon=ICON)
-            windowINFO.read()
-            windowINFO.close()
-        elif event == "NumPy::COPYRIGHT":
-            f = open(files.resource_path("./copyright/copyright_numpy"), encoding="utf-8")
-            sgfxd = f.readlines()
-            text = "".join(sgfxd)
-            layoutINFO = [[sg.Multiline(text, justification="center", auto_size_text=True, size=(50, 20), disabled=True)]]
-            windowINFO = sg.Window(lang.BIBLIA_APP_INFO, layoutINFO, font=FONT, finalize=True, icon=ICON)
-            windowINFO.read()
-            windowINFO.close()
-        elif event == "Regex::HILFE":
-            f = open(files.resource_path(lang.BIBLIA_APP_REGEX_FILE_NAME), encoding="utf-8")
-            sgfxd = f.readlines()
-            text = "".join(sgfxd)
-            layoutINFO = [[sg.Multiline(text, justification="left", auto_size_text=True, size=(50, 20), disabled=True)]]
-            windowINFO = sg.Window(lang.BIBLIA_APP_REGEX_HEADER, layoutINFO, font=FONT, finalize=True, icon=ICON)
-            windowINFO.read()
-            windowINFO.close()
+        
 
         elif re.search("!CLEAR", event):
             if prev_button != None: window[prev_button].update(disabled=False)
